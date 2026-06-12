@@ -16,6 +16,14 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
+    with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
+        json.dump(
+            obj=[],
+            fp=f,
+            ensure_ascii=False,
+            indent=4
+        )
+
     with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
         configs = json.load(f)
 
@@ -85,14 +93,47 @@ async def message_handler(message: discord.Message):
                         content=f"【系統提示】當前還無法偵測 {attachment.content_type} 類型的附件。"
                     )
 
-            response = await ask_ollama(
-                sender_message=sender_message
+            with open(Path(__file__).parent/"short_memory.json", "r", encoding="utf-8") as f:
+                short_memory = json.load(f)
+
+            ollama_response = await ask_ollama(
+                sender_message=sender_message,
+                short_memory=short_memory
             )
 
-            await discord_events.reply_message(
-                message=message,
-                content=response
+            async with message.channel.typing():
+                await discord_events.reply_message(
+                    message=message,
+                    content=ollama_response["message"]["content"]
+                )
+
+            short_memory.append(
+                {
+                    "role": "user",
+                    "content": message.clean_content
+                }
             )
+
+            short_memory.append(
+                {
+                    "role": "assistant",
+                    "content": ollama_response["message"]["content"]
+                }
+            )
+
+            with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
+                json.dump(
+                    obj=short_memory,
+                    fp=f,
+                    ensure_ascii=False,
+                    indent=4
+                )
+
+            print("=== Token 報告 ===")
+            print(f"傳入：{ollama_response['prompt_eval_count']}")
+            print(f"回覆：{ollama_response['eval_count']}")
+            print(f"總共：{ollama_response['prompt_eval_count'] + ollama_response['eval_count']}")
+            print(f"使用率：{ollama_response['prompt_eval_count'] / 16384:.1%}")
 
         case discord.MessageType.reply:
             await discord_events.reply_message(
