@@ -8,15 +8,6 @@ async def ask_ollama(sender_message: dict):
     with open(Path(__file__).parent.parent/"ai_soul.md", "r", encoding="utf-8") as f:
         ai_soul = f.read()
 
-    # 使用者傳入的訊息格式
-    sender_message_example = {
-        "id": 338558312079687680,
-        "name": "minyinpop",
-        "role": "user",
-        "message": "@足立レイ 今天天氣真不錯，對吧？",
-        "attachments": [bytes]
-    }
-
     chat_messages = [
         {
             "role": "system",
@@ -29,16 +20,17 @@ async def ask_ollama(sender_message: dict):
                  {ai_soul}
                  
                  === 環境參數 ===
-                 使用者ID：{sender_message["id"]}
                  使用者名稱：{sender_message["name"]}
                  """
         },
         {
             "role": "user",
-            "content": sender_message["message"],
-            "images": sender_message["attachments"]
+            "content": sender_message["message"]
         }
     ]
+
+    if "attachments" in sender_message:
+        chat_messages[1]["images"] = sender_message["attachments"]
 
     response = chat(
         model="gemma3:12b",

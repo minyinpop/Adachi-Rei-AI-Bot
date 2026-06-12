@@ -3,6 +3,7 @@ import discord
 import asyncio
 import json
 
+from ollama_adapter.ollama_bot import ask_ollama
 from configs import DISCORD_BOT_TOKEN
 from pathlib import Path
 
@@ -61,7 +62,37 @@ async def message_worker():
 async def message_handler(message: discord.Message):
     match message.type:
         case discord.MessageType.default:
-            pass
+            sender_message = {
+                "id": message.author.id,
+                "name": message.author.name,
+                "role": "user",
+                "message": message.clean_content
+            }
+
+            for attachment in message.attachments:
+                if attachment.content_type.startswith("image/"):
+                    image_data = await attachment.read()
+
+                    if "attachments" in sender_message:
+                        sender_message["attachments"].append(image_data)
+
+                    else:
+                        sender_message["attachments"] = [image_data]
+
+                else:
+                    await discord_events.reply_message(
+                        message=message,
+                        content=f"【系統提示】當前還無法偵測 {attachment.content_type} 類型的附件。"
+                    )
+
+            response = await ask_ollama(
+                sender_message=sender_message
+            )
+
+            await discord_events.reply_message(
+                message=message,
+                content=response
+            )
 
         case discord.MessageType.reply:
             await discord_events.reply_message(
