@@ -17,7 +17,7 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
-    with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
+    with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
         json.dump(
             obj=[],
             fp=f,
@@ -127,15 +127,33 @@ async def message_handler(message: discord.Message):
                         emoji=Reaction.done.value
                     )
 
-                with open(Path(__file__).parent/"short_memory.json", "r", encoding="utf-8") as f:
-                    short_memory = json.load(f)
+                with open(Path(__file__).parent/"short_memories.json", "r", encoding="utf-8") as f:
+                    short_memories = json.load(f)
 
                 with open(Path(__file__).parent/"long_memory.json", "r", encoding="utf-8") as f:
                     long_memory = json.load(f)
 
+                is_new_memory = True
+
+                short_memory_messages = []
+
+                target_channel_index = 0
+
+                for i in range(len(short_memories)):
+                    target_channel_index = i
+
+                    if short_memories[target_channel_index]["channel_id"] == message.channel.id:
+                        is_new_memory = False
+
+                        short_memory_messages = short_memories[target_channel_index]["messages"]
+                        break
+
+                if is_new_memory:
+                    short_memory_messages = []
+
                 ollama_response = await ask_ollama(
                     sender_message=sender_message,
-                    short_memory=short_memory,
+                    short_memory=short_memory_messages,
                     long_memory=long_memory,
                     think_callback=think_callback,
                     done_callback=done_callback
@@ -146,23 +164,34 @@ async def message_handler(message: discord.Message):
                     content=ollama_response["message"]["content"]
                 )
 
-                short_memory.append(
+                short_memory_messages.append(
                     {
                         "role": "user",
                         "content": message.clean_content
                     }
                 )
 
-                short_memory.append(
+                short_memory_messages.append(
                     {
                         "role": "assistant",
                         "content": ollama_response["message"]["content"]
                     }
                 )
 
-                with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
+                if is_new_memory:
+                    short_memories.append(
+                        {
+                            "channel_id": message.channel.id,
+                            "messages": short_memory_messages
+                        }
+                    )
+
+                else:
+                    short_memories[target_channel_index]["messages"] = short_memory_messages
+
+                with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
                     json.dump(
-                        obj=short_memory,
+                        obj=short_memories,
                         fp=f,
                         ensure_ascii=False,
                         indent=4
