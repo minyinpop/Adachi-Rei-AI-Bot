@@ -1,12 +1,26 @@
+import asyncio
+import json
+
 from pathlib import Path
+from typing import Callable, Awaitable
+
 from ollama import chat
 
-async def ask_ollama(sender_message: dict, short_memory: dict):
+async def ask_ollama(sender_message: dict,
+                     short_memory: dict,
+                     think_callback: Callable[[], Awaitable[None]] | None = None,
+                     done_callback: Callable[[], Awaitable[None]] | None = None):
+    if think_callback:
+        await think_callback()
+
     with open(Path(__file__).parent.parent/"ai_identity.md", "r", encoding="utf-8") as f:
         ai_identity = f.read()
 
     with open(Path(__file__).parent.parent/"ai_soul.md", "r", encoding="utf-8") as f:
         ai_soul = f.read()
+
+    with open(Path(__file__).parent/"ollama_configs.json", "r", encoding="utf-8") as f:
+        ollama_configs = json.load(f)
 
     system_prompt = {
         "role": "system",
@@ -35,12 +49,17 @@ async def ask_ollama(sender_message: dict, short_memory: dict):
     message_prompts.extend(short_memory)
     message_prompts.append(chat_prompt)
 
-    response = chat(
-        model="gemma3:12b",
+    response = await asyncio.to_thread(
+        chat,
+        model=ollama_configs["response_model"],
         messages=message_prompts,
         options={
             "num_ctx": 16384
-        }
+        },
+        keep_alive="1h"
     )
+
+    if done_callback:
+        await done_callback()
 
     return response
