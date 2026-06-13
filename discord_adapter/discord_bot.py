@@ -130,9 +130,13 @@ async def message_handler(message: discord.Message):
                 with open(Path(__file__).parent/"short_memory.json", "r", encoding="utf-8") as f:
                     short_memory = json.load(f)
 
+                with open(Path(__file__).parent/"long_memory.json", "r", encoding="utf-8") as f:
+                    long_memory = json.load(f)
+
                 ollama_response = await ask_ollama(
                     sender_message=sender_message,
                     short_memory=short_memory,
+                    long_memory=long_memory,
                     think_callback=think_callback,
                     done_callback=done_callback
                 )
@@ -169,7 +173,7 @@ async def message_handler(message: discord.Message):
                 print(f"Token 回覆：{ollama_response['eval_count']}")
                 print(f"Token 總共：{ollama_response['prompt_eval_count'] + ollama_response['eval_count']}")
                 print(f"Token 使用：{ollama_response['prompt_eval_count'] / 16384 * 100:.2f} %")
-                print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} 秒")
+                print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} toks/s")
 
         case discord.MessageType.reply:
             await discord_events.reply_message(
