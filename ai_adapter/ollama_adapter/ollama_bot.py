@@ -22,23 +22,6 @@ async def ask_ollama(sender_message: dict,
     with open(Path(__file__).parent/"ollama_configs.json", "r", encoding="utf-8") as f:
         ollama_configs = json.load(f)
 
-    # 系統提示詞
-    system_prompt = {
-        "role": "system",
-        "content":
-            f"""
-             === 自我身份 ===
-             {ai_identity}
-             
-             === 核心人格 ===
-             {ai_soul}
-             
-             === 環境參數 ===
-             使用者名稱：{sender_message["name"]}
-             """
-    }
-    # ===
-
     # 長期記憶提示詞
     relationship_prompts = []
     event_prompts = []
@@ -53,22 +36,33 @@ async def ask_ollama(sender_message: dict,
     relationship_prompts = "\n".join(relationship_prompts)
     event_prompts = "\n".join(event_prompts)
 
-    long_memory_prompt = {
+    print("=== 與他人的關係 ===")
+    print(relationship_prompts)
+    print("=== 正在發生的事件 ===")
+    print(event_prompts)
+    # ===
+
+    # 系統提示詞
+    system_prompt = {
         "role": "system",
         "content":
             f"""
-            === 已知人物關係 ===
-            {relationship_prompts}
+             === 自我身份 ===
+             {ai_identity}
+             
+             === 核心人格 ===
+             {ai_soul}
+             
+             === 環境參數 ===
+             正在跟你對話的使用者名稱：{sender_message["name"]}
+             
+             === 與他人的關係 ===
+             {relationship_prompts}
             
-            === 已知事件 ===
-            {event_prompts}
-            """
+             === 正在發生的事件 ===
+             {event_prompts}
+             """
     }
-
-    print("=== 已知人物關係 ===")
-    print(relationship_prompts)
-    print("=== 已知事件 ===")
-    print(event_prompts)
     # ===
 
     # 對話提示詞
@@ -81,10 +75,7 @@ async def ask_ollama(sender_message: dict,
         chat_prompt["images"] = sender_message["attachments"]
     # ===
 
-    message_prompts = [
-        system_prompt,
-        long_memory_prompt
-    ]
+    message_prompts = [system_prompt]
     message_prompts.extend(short_memory)
     message_prompts.append(chat_prompt)
 

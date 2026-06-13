@@ -73,7 +73,7 @@ async def message_worker():
 
 async def message_handler(message: discord.Message):
     match message.type:
-        case discord.MessageType.default:
+        case discord.MessageType.default | discord.MessageType.reply:
             await discord_events.add_reaction(
                 message=message,
                 emoji=Reaction.read.value
@@ -175,13 +175,13 @@ async def message_handler(message: discord.Message):
                 print(f"Token 使用：{ollama_response['prompt_eval_count'] / 16384 * 100:.2f} %")
                 print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} toks/s")
 
-        case discord.MessageType.reply:
+        case discord.MessageType.call:
             await discord_events.reply_message(
                 message=message,
-                content="【系統提示】當前還無法處裡回覆類型的訊息。"
+                content="【系統提示】當前還無法處裡來電訊息。"
             )
 
-            print(f"【❗】當前還無法處裡回覆類型的訊息。")
+            print(f"【❗】當前還無法處裡來電訊息。")
 
         case _:
             await discord_events.reply_message(
