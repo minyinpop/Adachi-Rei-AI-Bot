@@ -2,7 +2,15 @@
   {
     "id": 338558312079687680,
     "name": "minyinpop",
+    "gender": "male",
     "relationship": "minyinpop 是我的創作者之一",
-    "event": "因為 minyinpop 強行餵食炸豬排，所以觸發黑化事件"
+    "event": ""
+  },
+  {
+    "id": 880111279530999828,
+    "name": "RenRen",
+    "gender": "male",
+    "relationship": "RenRen 是我的朋友",
+    "event": ""
   }
 ]
