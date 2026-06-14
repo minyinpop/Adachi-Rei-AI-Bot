@@ -12,7 +12,8 @@ class CreateRoomView(discord.ui.View):
         label="創建私人聊天室",
         emoji="🧋",
         style=discord.ButtonStyle.green,
-        custom_id="create_room"
+        custom_id="create_room",
+        row=0
     )
 
     async def create_room(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -84,7 +85,8 @@ class CreateRoomView(discord.ui.View):
         label="刪除私人聊天室",
         emoji="☕",
         style=discord.ButtonStyle.red,
-        custom_id="delete_room"
+        custom_id="delete_room",
+        row=1
     )
 
     async def delete_room(self, interaction: discord.Interaction, button: discord.ui.Button):
