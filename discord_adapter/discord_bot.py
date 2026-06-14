@@ -17,13 +17,11 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
-    with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
-        json.dump(
-            obj=[],
-            fp=f,
-            ensure_ascii=False,
-            indent=4
-        )
+    client.loop.create_task(message_worker())
+
+    print("【✅】Discord 機器人啟動成功。")
+    
+    return
 
     with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
@@ -31,15 +29,20 @@ async def on_ready():
     with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
         ollama_configs = json.load(f)
 
+    with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
+        json.dump(
+            obj=[],
+            fp=f,
+            ensure_ascii=False,
+            indent=4
+        )
+
     for channel_id in discord_configs["target_channel_id"]:
         await discord_events.send_message(
             channel=client.get_channel(channel_id),
             content=f"【啟動狀態】足立レイ - 啟動\n【思考模型】{ollama_configs['response_model']}"
         )
 
-    client.loop.create_task(message_worker())
-
-    print("【✅】Discord 機器人啟動成功。")
 
 @client.event
 async def on_message(message: discord.Message):
@@ -73,7 +76,7 @@ async def message_worker():
 
 async def message_handler(message: discord.Message):
     match message.type:
-        case discord.MessageType.default:
+        case discord.MessageType.default | discord.MessageType.reply:
             await discord_events.add_reaction(
                 message=message,
                 emoji=Reaction.read.value
@@ -127,12 +130,34 @@ async def message_handler(message: discord.Message):
                         emoji=Reaction.done.value
                     )
 
-                with open(Path(__file__).parent/"short_memory.json", "r", encoding="utf-8") as f:
-                    short_memory = json.load(f)
+                with open(Path(__file__).parent/"short_memories.json", "r", encoding="utf-8") as f:
+                    short_memories = json.load(f)
+
+                with open(Path(__file__).parent/"long_memory.json", "r", encoding="utf-8") as f:
+                    long_memory = json.load(f)
+
+                is_new_memory = True
+
+                short_memory_messages = []
+
+                target_channel_index = 0
+
+                for i in range(len(short_memories)):
+                    target_channel_index = i
+
+                    if short_memories[target_channel_index]["channel_id"] == message.channel.id:
+                        is_new_memory = False
+
+                        short_memory_messages = short_memories[target_channel_index]["messages"]
+                        break
+
+                if is_new_memory:
+                    short_memory_messages = []
 
                 ollama_response = await ask_ollama(
                     sender_message=sender_message,
-                    short_memory=short_memory,
+                    short_memory=short_memory_messages,
+                    long_memory=long_memory,
                     think_callback=think_callback,
                     done_callback=done_callback
                 )
@@ -142,23 +167,34 @@ async def message_handler(message: discord.Message):
                     content=ollama_response["message"]["content"]
                 )
 
-                short_memory.append(
+                short_memory_messages.append(
                     {
                         "role": "user",
                         "content": message.clean_content
                     }
                 )
 
-                short_memory.append(
+                short_memory_messages.append(
                     {
                         "role": "assistant",
                         "content": ollama_response["message"]["content"]
                     }
                 )
 
-                with open(Path(__file__).parent/"short_memory.json", "w", encoding="utf-8") as f:
+                if is_new_memory:
+                    short_memories.append(
+                        {
+                            "channel_id": message.channel.id,
+                            "messages": short_memory_messages
+                        }
+                    )
+
+                else:
+                    short_memories[target_channel_index]["messages"] = short_memory_messages
+
+                with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
                     json.dump(
-                        obj=short_memory,
+                        obj=short_memories,
                         fp=f,
                         ensure_ascii=False,
                         indent=4
@@ -169,15 +205,15 @@ async def message_handler(message: discord.Message):
                 print(f"Token 回覆：{ollama_response['eval_count']}")
                 print(f"Token 總共：{ollama_response['prompt_eval_count'] + ollama_response['eval_count']}")
                 print(f"Token 使用：{ollama_response['prompt_eval_count'] / 16384 * 100:.2f} %")
-                print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} 秒")
+                print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} toks/s")
 
-        case discord.MessageType.reply:
+        case discord.MessageType.call:
             await discord_events.reply_message(
                 message=message,
-                content="【系統提示】當前還無法處裡回覆類型的訊息。"
+                content="【系統提示】當前還無法處裡來電訊息。"
             )
 
-            print(f"【❗】當前還無法處裡回覆類型的訊息。")
+            print(f"【❗】當前還無法處裡來電訊息。")
 
         case _:
             await discord_events.reply_message(
