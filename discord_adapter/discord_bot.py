@@ -16,6 +16,9 @@ client = discord.Client(intents=intents)
 
 message_queue = asyncio.Queue()
 
+queue_1 = asyncio.Queue()
+queue_2 = asyncio.Queue()
+
 @client.event
 async def on_ready():
     client.loop.create_task(message_worker())
