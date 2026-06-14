@@ -6,7 +6,7 @@ from pathlib import Path
 from ollama import chat
 
 async def ask_ollama(sender_message: dict,
-                     short_memory: dict,
+                     short_memory_messages: list,
                      long_memory: list,
                      think_callback: Callable[[], Awaitable[None]] | None = None,
                      done_callback: Callable[[], Awaitable[None]] | None = None):
@@ -62,17 +62,22 @@ async def ask_ollama(sender_message: dict,
 
     # 對話提示詞
     chat_prompt = {
-        "role": "user",
+        "role": sender_message["role"],
         "content": sender_message["message"]
     }
 
     if "attachments" in sender_message:
-        chat_prompt["images"] = sender_message["attachments"]
+        for attachment in sender_message["attachments"]:
+            attachment = await attachment.read()
+
+            if "images" in chat_prompt:
+                chat_prompt["images"].append(attachment)
+            else:
+                chat_prompt["images"] = [attachment]
     # ===
 
-    message_prompts = []
-    message_prompts.append(system_prompt)
-    message_prompts.extend(short_memory)
+    message_prompts = [system_prompt]
+    message_prompts.extend(short_memory_messages)
     message_prompts.append(chat_prompt)
 
     response = await asyncio.to_thread(
@@ -85,7 +90,30 @@ async def ask_ollama(sender_message: dict,
         keep_alive="1h"
     )
 
+    # 儲存提示詞
+    short_memory_messages.append(
+        {
+            "role": "user",
+            "content": sender_message["message"]
+        }
+    )
+
+    short_memory_messages.append(
+        {
+            "role": "assistant",
+            "content": response["message"]["content"]
+        }
+    )
+    # ===
+
     if done_callback:
         await done_callback()
 
-    return response
+    print(f"\n")
+    print(f"Token 傳入：{response['prompt_eval_count']}")
+    print(f"Token 回覆：{response['eval_count']}")
+    print(f"Token 總共：{response['prompt_eval_count'] + response['eval_count']}")
+    print(f"Token 使用：{response['prompt_eval_count'] / 16384 * 100:.2f} %")
+    print(f"Token 速度：{response['eval_count'] / response['eval_duration'] * 1e9:.2f} toks/s")
+
+    return response["message"]["content"], short_memory_messages

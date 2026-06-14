@@ -5,6 +5,7 @@ import json
 
 from discord_create_room_view import CreateRoomView
 from ollama_adapter.ollama_bot import ask_ollama
+from openai_adapter.openai_bot import ask_openai
 from configs import DISCORD_BOT_TOKEN
 from pathlib import Path
 from enum import Enum
@@ -50,15 +51,6 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
-
-    with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
-        ollama_configs = json.load(f)
-
-    await discord_events.send_message(
-        channel=client.get_channel(discord_configs["public_chat_channel_id"]),
-        content=f"【系統訊息】足立レイ - 啟動\n【回應模型】{ollama_configs['response_model']}",
-    )
-
     print("【✅】Discord 機器人啟動成功。")
 
 @client.event
@@ -66,51 +58,42 @@ async def on_message(message: discord.Message):
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
 
-    if message.channel.id == discord_configs["public_chat_channel_id"]:
-        if message.author.bot:
-            return
+    if message.author.bot:
+        return
 
-        if message.author.id == client.user.id:
-            return
+    if message.author.id == client.user.id:
+        return
 
-        if not message.mentions:
-            return
+    if not message.mentions:
+        return
 
-        if client.user not in message.mentions:
-            return
+    if client.user not in message.mentions:
+        return
 
-        await message_queue.put(message)
+    if message.channel.id == discord_configs["public_openai_chat_channel_id"]:
+        await message_queue.put((True, message))
+        return
 
-    else:
-        for content in discord_configs["created_channel_contents"]:
-            if message.channel.id != content["channel_id"]:
-                continue
+    if message.channel.id == discord_configs["public_ollama_chat_channel_id"]:
+        await message_queue.put((False, message))
+        return
 
-            if message.author.bot:
-                return
+    for content in discord_configs["private_ollama_chat_channel_id"]:
+        if message.channel.id != content["channel_id"]:
+            continue
 
-            if message.author.id == client.user.id:
-                return
-
-            if not message.mentions:
-                return
-
-            if client.user not in message.mentions:
-                return
-
-            await message_queue.put(message)
-
-            return
+        await message_queue.put((False, message))
+        return
 
 async def message_worker():
     while True:
-        message = await message_queue.get()
+        (is_openai, message) = await message_queue.get()
 
-        await message_handler(message)
+        await message_handler(is_openai, message)
 
         message_queue.task_done()
 
-async def message_handler(message: discord.Message):
+async def message_handler(is_openai: bool, message: discord.Message):
     match message.type:
         case discord.MessageType.default | discord.MessageType.reply:
             await discord_events.add_reaction(
@@ -127,13 +110,10 @@ async def message_handler(message: discord.Message):
 
             for attachment in message.attachments:
                 if attachment.content_type.startswith("image/"):
-                    image_data = await attachment.read()
-
                     if "attachments" in sender_message:
-                        sender_message["attachments"].append(image_data)
-
+                        sender_message["attachments"].append(attachment)
                     else:
-                        sender_message["attachments"] = [image_data]
+                        sender_message["attachments"] = [attachment]
 
                 else:
                     await discord_events.reply_message(
@@ -174,6 +154,7 @@ async def message_handler(message: discord.Message):
 
                 is_new_memory = True
 
+                ai_response = ""
                 short_memory_messages = []
 
                 target_channel_index = 0
@@ -190,31 +171,26 @@ async def message_handler(message: discord.Message):
                 if is_new_memory:
                     short_memory_messages = []
 
-                ollama_response = await ask_ollama(
-                    sender_message=sender_message,
-                    short_memory=short_memory_messages,
-                    long_memory=long_memory,
-                    think_callback=think_callback,
-                    done_callback=done_callback
-                )
+                if is_openai:
+                    (ai_response, short_memory_messages) = await ask_openai(
+                        sender_message=sender_message,
+                        short_memory_messages=short_memory_messages,
+                        long_memory=long_memory,
+                        think_callback=think_callback,
+                        done_callback=done_callback
+                    )
+                else:
+                    (ai_response, short_memory_messages) = await ask_ollama(
+                        sender_message=sender_message,
+                        short_memory_messages=short_memory_messages,
+                        long_memory=long_memory,
+                        think_callback=think_callback,
+                        done_callback=done_callback
+                    )
 
                 await discord_events.reply_message(
                     message=message,
-                    content=ollama_response["message"]["content"]
-                )
-
-                short_memory_messages.append(
-                    {
-                        "role": "user",
-                        "content": message.clean_content
-                    }
-                )
-
-                short_memory_messages.append(
-                    {
-                        "role": "assistant",
-                        "content": ollama_response["message"]["content"]
-                    }
+                    content=ai_response
                 )
 
                 if is_new_memory:
@@ -235,13 +211,6 @@ async def message_handler(message: discord.Message):
                         ensure_ascii=False,
                         indent=4
                     )
-
-                print(f"\n=== {message.channel.name} ===")
-                print(f"Token 傳入：{ollama_response['prompt_eval_count']}")
-                print(f"Token 回覆：{ollama_response['eval_count']}")
-                print(f"Token 總共：{ollama_response['prompt_eval_count'] + ollama_response['eval_count']}")
-                print(f"Token 使用：{ollama_response['prompt_eval_count'] / 16384 * 100:.2f} %")
-                print(f"Token 速度：{ollama_response['eval_count'] / ollama_response['eval_duration'] * 1e9:.2f} toks/s")
 
         case discord.MessageType.call:
             await discord_events.reply_message(

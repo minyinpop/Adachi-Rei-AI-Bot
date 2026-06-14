@@ -97,7 +97,7 @@ class CreateRoomView(discord.ui.View):
         with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
             discord_configs = json.load(f)
 
-        for content in discord_configs["created_channel_contents"]:
+        for content in discord_configs["private_ollama_chat_channel_id"]:
             channel = guild.get_channel(content["channel_id"])
 
             if channel:
@@ -108,7 +108,7 @@ class CreateRoomView(discord.ui.View):
                     print(f"【❗】嘗試刪除 Discord 頻道 {guild.get_channel(content['channel_id'])} 時發生錯誤：{e}")
 
                 finally:
-                    discord_configs["created_channel_contents"].remove(content)
+                    discord_configs["private_ollama_chat_channel_id"].remove(content)
 
                     with open(Path(__file__).parent/"settings/discord_configs.json", "w", encoding="utf-8") as f:
                         json.dump(
