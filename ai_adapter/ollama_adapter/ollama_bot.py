@@ -76,8 +76,8 @@ async def ask_ollama(sender_message: dict,
     # ===
 
     message_prompts = []
-    message_prompts.extend(short_memory)
     message_prompts.append(system_prompt)
+    message_prompts.extend(short_memory)
     message_prompts.append(chat_prompt)
 
     response = await asyncio.to_thread(

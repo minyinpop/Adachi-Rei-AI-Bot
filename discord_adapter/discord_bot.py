@@ -3,6 +3,7 @@ import discord
 import asyncio
 import json
 
+from discord_create_room_view import CreateRoomView
 from ollama_adapter.ollama_bot import ask_ollama
 from configs import DISCORD_BOT_TOKEN
 from pathlib import Path
@@ -15,56 +16,71 @@ client = discord.Client(intents=intents)
 
 message_queue = asyncio.Queue()
 
+queue_1 = asyncio.Queue()
+queue_2 = asyncio.Queue()
+
 @client.event
 async def on_ready():
     client.loop.create_task(message_worker())
 
-    print("【✅】Discord 機器人啟動成功。")
-    
-    return
-
-    with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
+    with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
+
+    client.add_view(
+        CreateRoomView(),
+        message_id=discord_configs["create_room_view_message_id"]
+    )
+
+    if discord_configs["create_room_view_message_id"] == -1:
+        message = await client.get_channel(discord_configs["create_room_view_channel_id"]).send(
+            view=CreateRoomView()
+        )
+
+        discord_configs["create_room_view_message_id"] = message.id
+
+        with open(Path(__file__).parent/"settings/discord_configs.json", "w", encoding="utf-8") as f:
+            json.dump(
+                discord_configs,
+                fp=f,
+                ensure_ascii=False,
+                indent=4
+            )
 
     with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
         ollama_configs = json.load(f)
 
-    with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
-        json.dump(
-            obj=[],
-            fp=f,
-            ensure_ascii=False,
-            indent=4
-        )
+    await discord_events.send_message(
+        channel=client.get_channel(discord_configs["public_chat_channel_id"]),
+        content=f"【系統訊息】足立レイ - 啟動\n【回應模型】{ollama_configs['response_model']}",
+    )
 
-    for channel_id in discord_configs["target_channel_id"]:
-        await discord_events.send_message(
-            channel=client.get_channel(channel_id),
-            content=f"【啟動狀態】足立レイ - 啟動\n【思考模型】{ollama_configs['response_model']}"
-        )
-
+    print("【✅】Discord 機器人啟動成功。")
 
 @client.event
 async def on_message(message: discord.Message):
-    with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
-        configs = json.load(f)
+    with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
+        discord_configs = json.load(f)
 
-    if message.channel.id not in configs["target_channel_id"]:
+    if message.channel.id != discord_configs["public_chat_channel_id"]:
         return
 
-    if message.author.bot:
-        return
+    for content in discord_configs["created_channel_contents"]:
+        if message.channel.id == content["channel_id"]:
+            if message.author.bot:
+                return
 
-    if message.author.id == client.user.id:
-        return
+            if message.author.id == client.user.id:
+                return
 
-    if not message.mentions:
-        return
+            if not message.mentions:
+                return
 
-    if client.user not in message.mentions:
-        return
+            if client.user not in message.mentions:
+                return
 
-    await message_queue.put(message)
+            await message_queue.put(message)
+
+            return
 
 async def message_worker():
     while True:
@@ -130,10 +146,10 @@ async def message_handler(message: discord.Message):
                         emoji=Reaction.done.value
                     )
 
-                with open(Path(__file__).parent/"short_memories.json", "r", encoding="utf-8") as f:
+                with open(Path(__file__).parent/"settings/short_memories.json", "r", encoding="utf-8") as f:
                     short_memories = json.load(f)
 
-                with open(Path(__file__).parent/"long_memory.json", "r", encoding="utf-8") as f:
+                with open(Path(__file__).parent/"settings/long_memory.json", "r", encoding="utf-8") as f:
                     long_memory = json.load(f)
 
                 is_new_memory = True
@@ -192,7 +208,7 @@ async def message_handler(message: discord.Message):
                 else:
                     short_memories[target_channel_index]["messages"] = short_memory_messages
 
-                with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
+                with open(Path(__file__).parent/"settings/short_memories.json", "w", encoding="utf-8") as f:
                     json.dump(
                         obj=short_memories,
                         fp=f,
