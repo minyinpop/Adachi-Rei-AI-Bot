@@ -35,11 +35,6 @@ async def ask_ollama(sender_message: dict,
 
     relationship_prompts = "\n".join(relationship_prompts)
     event_prompts = "\n".join(event_prompts)
-
-    print("=== 與他人的關係 ===")
-    print(relationship_prompts)
-    print("=== 正在發生的事件 ===")
-    print(event_prompts)
     # ===
 
     # 系統提示詞

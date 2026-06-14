@@ -20,6 +20,14 @@ message_queue = asyncio.Queue()
 async def on_ready():
     client.loop.create_task(message_worker())
 
+    with open(Path(__file__).parent/"settings/short_memories.json", "w", encoding="utf-8") as f:
+        json.dump(
+            [],
+            fp=f,
+            ensure_ascii=False,
+            indent=4
+        )
+
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
 
@@ -58,11 +66,26 @@ async def on_message(message: discord.Message):
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
 
-    if message.channel.id != discord_configs["public_chat_channel_id"]:
-        return
+    if message.channel.id == discord_configs["public_chat_channel_id"]:
+        if message.author.bot:
+            return
 
-    for content in discord_configs["created_channel_contents"]:
-        if message.channel.id == content["channel_id"]:
+        if message.author.id == client.user.id:
+            return
+
+        if not message.mentions:
+            return
+
+        if client.user not in message.mentions:
+            return
+
+        await message_queue.put(message)
+
+    else:
+        for content in discord_configs["created_channel_contents"]:
+            if message.channel.id != content["channel_id"]:
+                continue
+
             if message.author.bot:
                 return
 
@@ -213,7 +236,7 @@ async def message_handler(message: discord.Message):
                         indent=4
                     )
 
-                print("=== 回應報告 ===")
+                print(f"\n=== {message.channel.name} ===")
                 print(f"Token 傳入：{ollama_response['prompt_eval_count']}")
                 print(f"Token 回覆：{ollama_response['eval_count']}")
                 print(f"Token 總共：{ollama_response['prompt_eval_count'] + ollama_response['eval_count']}")
