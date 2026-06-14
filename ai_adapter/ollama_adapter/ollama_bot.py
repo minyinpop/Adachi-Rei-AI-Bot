@@ -75,8 +75,9 @@ async def ask_ollama(sender_message: dict,
         chat_prompt["images"] = sender_message["attachments"]
     # ===
 
-    message_prompts = [system_prompt]
+    message_prompts = []
     message_prompts.extend(short_memory)
+    message_prompts.append(system_prompt)
     message_prompts.append(chat_prompt)
 
     response = await asyncio.to_thread(
@@ -84,7 +85,7 @@ async def ask_ollama(sender_message: dict,
         model=ollama_configs["response_model"],
         messages=message_prompts,
         options={
-            "num_ctx": 16384
+            "num_ctx": 32768
         },
         keep_alive="1h"
     )

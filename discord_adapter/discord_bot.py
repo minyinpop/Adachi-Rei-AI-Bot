@@ -17,6 +17,18 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
+    client.loop.create_task(message_worker())
+
+    print("【✅】Discord 機器人啟動成功。")
+    
+    return
+
+    with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
+        discord_configs = json.load(f)
+
+    with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
+        ollama_configs = json.load(f)
+
     with open(Path(__file__).parent/"short_memories.json", "w", encoding="utf-8") as f:
         json.dump(
             obj=[],
@@ -25,21 +37,12 @@ async def on_ready():
             indent=4
         )
 
-    with open(Path(__file__).parent/"discord_configs.json", "r", encoding="utf-8") as f:
-        discord_configs = json.load(f)
-
-    with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
-        ollama_configs = json.load(f)
-
     for channel_id in discord_configs["target_channel_id"]:
         await discord_events.send_message(
             channel=client.get_channel(channel_id),
             content=f"【啟動狀態】足立レイ - 啟動\n【思考模型】{ollama_configs['response_model']}"
         )
 
-    client.loop.create_task(message_worker())
-
-    print("【✅】Discord 機器人啟動成功。")
 
 @client.event
 async def on_message(message: discord.Message):
