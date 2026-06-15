@@ -112,7 +112,7 @@ async def ask_ollama(sender_message: dict,
     print(f"Token 傳入：{response['prompt_eval_count']}")
     print(f"Token 回覆：{response['eval_count']}")
     print(f"Token 總共：{response['prompt_eval_count'] + response['eval_count']}")
-    print(f"Token 使用：{response['prompt_eval_count'] / 16384 * 100:.2f} %")
+    print(f"Token 使用：{response['prompt_eval_count'] / 32768 * 100:.2f} %")
     print(f"Token 速度：{response['eval_count'] / response['eval_duration'] * 1e9:.2f} toks/s")
 
     return response["message"]["content"], short_memory_messages
