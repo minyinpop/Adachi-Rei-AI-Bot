@@ -1,3 +1,4 @@
+import textwrap
 import asyncio
 import json
 
@@ -14,49 +15,47 @@ async def ask_ollama(sender_message: dict,
         await think_callback()
 
     with open(Path(__file__).parent.parent/"ai_identity.md", "r", encoding="utf-8") as f:
-        ai_identity = f.read()
+        ai_identity = textwrap.dedent(f.read()).strip()
 
     with open(Path(__file__).parent.parent/"ai_soul.md", "r", encoding="utf-8") as f:
-        ai_soul = f.read()
+        ai_soul = textwrap.dedent(f.read()).strip()
 
     with open(Path(__file__).parent/"ollama_configs.json", "r", encoding="utf-8") as f:
         ollama_configs = json.load(f)
 
     # 長期記憶提示詞
-    relationship_prompts = []
-    event_prompts = []
+    long_memory_prompts = []
 
     for memory in long_memory:
-        if "relationship" in memory:
-            relationship_prompts.append(memory["relationship"])
+        long_memory_prompts.append(
+            textwrap.dedent(f"""
+                 我認識 {memory['name']}
+                 {memory['name']} 的姓別是 {memory['gender']}
+                 {memory['name']} 是我的 {memory['relationship']}
+             """).strip()
+        )
 
-        if "event" in memory:
-            event_prompts.append(memory["event"])
-
-    relationship_prompts = "\n".join(relationship_prompts)
-    event_prompts = "\n".join(event_prompts)
+    long_memory_prompts = "\n\n".join(long_memory_prompts)
     # ===
 
     # 系統提示詞
     system_prompt = {
         "role": "system",
-        "content":
-            f"""
-             === 自我身份 ===
-             {ai_identity}
-             
-             === 核心人格 ===
-             {ai_soul}
-             
-             === 環境參數 ===
-             正在跟你對話的使用者名稱：{sender_message["name"]}
-             
-             === 與他人的關係 ===
-             {relationship_prompts}
-            
-             === 正在發生的事件 ===
-             {event_prompts}
-             """
+        "content": "\n".join(
+            [
+                "=== 自我身份 ===",
+                ai_identity,
+                "",
+                "=== 核心人格 ===",
+                ai_soul,
+                "",
+                "=== 環境參數 ===",
+                f"正在跟你對話的使用者名稱：{sender_message['name']}",
+                "",
+                "=== 與其他使用者的關係 ===",
+                long_memory_prompts
+            ]
+        )
     }
     # ===
 
