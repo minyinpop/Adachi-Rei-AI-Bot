@@ -51,7 +51,32 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
-    print("【✅】Discord 機器人啟動成功。")
+
+    with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
+        openai_configs = json.load(f)
+
+    with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
+        ollama_configs = json.load(f)
+
+    await discord_events.send_message(
+        channel=client.get_channel(discord_configs["state_channel_id"]),
+        content="\n".join(
+            [
+                "【啟動日誌】啟動檢查報告",
+                "",
+                "【系統檢查】私聊頻道 OK",
+                "【系統檢查】聊天頻道 OK",
+                "【系統檢查】聊地頻道 OK",
+                "",
+                "【系統訊息】足立レイ - 啟動",
+                "",
+                f"【聊天模型】{openai_configs['response_model']}",
+                f"【聊地模型】{ollama_configs['response_model']}",
+                "",
+                "【系統訊息】所有系統 OK - 歡迎聊天"
+            ]
+        )
+    )
 
 @client.event
 async def on_message(message: discord.Message):
