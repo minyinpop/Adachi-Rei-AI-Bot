@@ -93,11 +93,15 @@ class CreateRoomView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
 
         guild = interaction.guild
+        user = interaction.user
 
         with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
             discord_configs = json.load(f)
 
         for content in discord_configs["private_ollama_chat_channel_id"]:
+            if user.id != content["user_id"]:
+                continue
+
             channel = guild.get_channel(content["channel_id"])
 
             if channel:
