@@ -1,4 +1,5 @@
 {
+    "state_channel_id": 1516005453555826809,
     "public_openai_chat_channel_id": 1511958574321111152,
     "public_ollama_chat_channel_id": 1514128033986904064,
     "private_ollama_chat_channel_id": [],
