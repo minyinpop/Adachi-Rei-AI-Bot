@@ -2,15 +2,19 @@
   {
     "id": 338558312079687680,
     "name": "minyinpop",
-    "gender": "male",
-    "relationship": "minyinpop 是我的創作者之一",
-    "event": "minyinpop 強制餵我吃炸豬排，已觸發黑化模式"
+    "gender": "男",
+    "relationship": "創作者之一"
   },
   {
     "id": 880111279530999828,
     "name": "RenRen",
-    "gender": "male",
-    "relationship": "RenRen 是我的朋友",
-    "event": ""
+    "gender": "男",
+    "relationship": "朋友"
+  },
+  {
+    "id": 659717075421626398,
+    "name": "am_magic_87",
+    "gender": "女",
+    "relationship": "大頭貼的創作者"
   }
 ]
