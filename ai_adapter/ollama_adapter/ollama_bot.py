@@ -108,7 +108,6 @@ async def ask_ollama(sender_message: dict,
     if done_callback:
         await done_callback()
 
-    print(f"\n")
     print(f"Token 傳入：{response['prompt_eval_count']}")
     print(f"Token 回覆：{response['eval_count']}")
     print(f"Token 總共：{response['prompt_eval_count'] + response['eval_count']}")

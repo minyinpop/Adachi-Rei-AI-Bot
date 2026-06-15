@@ -21,14 +21,6 @@ message_queue = asyncio.Queue()
 async def on_ready():
     client.loop.create_task(message_worker())
 
-    with open(Path(__file__).parent/"settings/short_memories.json", "w", encoding="utf-8") as f:
-        json.dump(
-            [],
-            fp=f,
-            ensure_ascii=False,
-            indent=4
-        )
-
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
 
@@ -51,13 +43,13 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
-
+    """
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
 
     with open(Path(__file__).parent.parent/"ai_adapter/ollama_adapter/ollama_configs.json", "r", encoding="utf-8") as f:
         ollama_configs = json.load(f)
-
+        
     await discord_events.send_message(
         channel=client.get_channel(discord_configs["state_channel_id"]),
         content="\n".join(
@@ -77,6 +69,7 @@ async def on_ready():
             ]
         )
     )
+    """
 
 @client.event
 async def on_message(message: discord.Message):
