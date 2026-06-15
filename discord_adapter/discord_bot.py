@@ -43,7 +43,7 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
-    """
+
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
 
@@ -69,7 +69,6 @@ async def on_ready():
             ]
         )
     )
-    """
 
 @client.event
 async def on_message(message: discord.Message):
