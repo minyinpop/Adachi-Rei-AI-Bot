@@ -25,7 +25,7 @@ class CreateRoomView(discord.ui.View):
         with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
             discord_configs = json.load(f)
 
-        for content in discord_configs["created_channel_contents"]:
+        for content in discord_configs["private_ollama_chat_channel_id"]:
             if user.id == content["user_id"]:
                 await interaction.followup.send("您已經擁有私人聊天頻道了！", ephemeral=True)
                 return
@@ -55,7 +55,7 @@ class CreateRoomView(discord.ui.View):
             overwrites=overwrites
         )
 
-        discord_configs["created_channel_contents"].append(
+        discord_configs["private_ollama_chat_channel_id"].append(
             {
                 "user_id": user.id,
                 "channel_id": channel.id
