@@ -1,13 +1,30 @@
 import discord
+from discord import DiscordException
 
 async def send_message(channel: discord.TextChannel, content: str):
-    await channel.send(content)
+    try:
+        await channel.send(content)
+
+    except DiscordException:
+        pass
 
 async def reply_message(message: discord.Message, content: str):
-    await message.reply(content)
+    try:
+        await message.reply(content)
+
+    except DiscordException:
+        pass
 
 async def add_reaction(message: discord.Message, emoji: str):
-    await message.add_reaction(emoji)
+    try:
+        await message.add_reaction(emoji)
+
+    except DiscordException:
+        pass
 
 async def remove_reaction(message: discord.Message, emoji: str, member: discord.Member):
-    await message.remove_reaction(emoji, member)
+    try:
+        await message.remove_reaction(emoji, member)
+
+    except DiscordException:
+        pass
