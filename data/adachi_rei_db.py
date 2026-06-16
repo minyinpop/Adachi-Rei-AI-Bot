@@ -45,6 +45,22 @@ def insert_short_memory(channel_id: int, provider: str, role: str, content: str)
             )
         )
 
+def get_short_memory(channel_id: int):
+    with sqlite3.connect("adachi_rei.db") as connect:
+        cursor = connect.cursor()
+
+        cursor.execute(
+            """
+            SELECT * FROM short_memory
+            WHERE channel_id = ?
+            """,
+            (
+                channel_id,
+            )
+        )
+
+        return cursor.fetchall()
+
 init_short_memory()
 
 insert_short_memory(
