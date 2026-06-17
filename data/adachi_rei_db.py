@@ -10,15 +10,23 @@ def init_short_memory():
             (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TIMESTAMP,
+                ai_provider TEXT,
                 channel_id INTEGER,
-                provider TEXT,
-                role TEXT,
-                content TEXT
+                user_id INTEGER,
+                user_name TEXT,
+                user_role TEXT,
+                user_message TEXT
             )
             """
         )
 
-def insert_short_memory(channel_id: int, provider: str, role: str, content: str):
+def insert_short_memory(
+        ai_provider: str,
+        channel_id: int,
+        user_id: int,
+        user_name: str,
+        user_role: str,
+        user_message: str):
     with sqlite3.connect("adachi_rei.db") as connect:
         cursor = connect.cursor()
 
@@ -27,21 +35,25 @@ def insert_short_memory(channel_id: int, provider: str, role: str, content: str)
             INSERT INTO short_memory
                 (
                     created_at,
+                    ai_provider,
                     channel_id,
-                    provider,
-                    role,
-                    content
+                    user_id,
+                    user_name,
+                    user_role,
+                    user_message
                 )
             VALUES
                 (
-                    CURRENT_TIMESTAMP, ?, ?, ?, ?
+                    CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?
                 )
             """,
             (
+                ai_provider,
                 channel_id,
-                provider,
-                role,
-                content
+                user_id,
+                user_name,
+                user_role,
+                user_message
             )
         )
 
@@ -60,12 +72,3 @@ def get_short_memory(channel_id: int):
         )
 
         return cursor.fetchall()
-
-init_short_memory()
-
-insert_short_memory(
-    channel_id=338558312079687680,
-    provider="openai",
-    role="user",
-    content="Hello, world!"
-)
