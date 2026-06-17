@@ -1,3 +1,4 @@
+import data.adachi_rei_database as adachi_rei_db
 import discord_events
 import discord
 import asyncio
@@ -19,6 +20,10 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
+    # 資料庫檢查
+    adachi_rei_db.init_short_memory()
+    # ===
+
     client.loop.create_task(message_worker())
 
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
@@ -43,6 +48,9 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
+
+    # 因為開發所以先把下面的啟動訊息給關閉 TODO 開發完畢記得把 return 給刪除
+    # return
 
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
@@ -163,43 +171,29 @@ async def message_handler(is_openai: bool, message: discord.Message):
                         emoji=Reaction.done.value
                     )
 
-                with open(Path(__file__).parent/"settings/short_memories.json", "r", encoding="utf-8") as f:
-                    short_memories = json.load(f)
-
+                # === 新版短期記憶讀取方式 ===
                 with open(Path(__file__).parent/"settings/long_memory.json", "r", encoding="utf-8") as f:
                     long_memory = json.load(f)
 
-                is_new_memory = True
+                memories = adachi_rei_db.get_short_memory(
+                    channel_id=message.channel.id
+                )
 
-                ai_response = ""
-                short_memory_messages = []
-
-                target_channel_index = 0
-
-                for i in range(len(short_memories)):
-                    target_channel_index = i
-
-                    if short_memories[target_channel_index]["channel_id"] == message.channel.id:
-                        is_new_memory = False
-
-                        short_memory_messages = short_memories[target_channel_index]["messages"]
-                        break
-
-                if is_new_memory:
-                    short_memory_messages = []
+                short_memory_messages_dev = memories.copy()
 
                 if is_openai:
-                    (ai_response, short_memory_messages) = await ask_openai(
+                    ai_response = await ask_openai(
                         sender_message=sender_message,
-                        short_memory_messages=short_memory_messages,
+                        short_memory_messages=short_memory_messages_dev,
                         long_memory=long_memory,
                         think_callback=think_callback,
                         done_callback=done_callback
                     )
+
                 else:
-                    (ai_response, short_memory_messages) = await ask_ollama(
+                    ai_response = await ask_ollama(
                         sender_message=sender_message,
-                        short_memory_messages=short_memory_messages,
+                        short_memory_messages=short_memory_messages_dev,
                         long_memory=long_memory,
                         think_callback=think_callback,
                         done_callback=done_callback
@@ -210,24 +204,26 @@ async def message_handler(is_openai: bool, message: discord.Message):
                     content=ai_response
                 )
 
-                if is_new_memory:
-                    short_memories.append(
-                        {
-                            "channel_id": message.channel.id,
-                            "messages": short_memory_messages
-                        }
-                    )
+                adachi_rei_db.insert_short_memory(
+                    ai_provider="openai" if is_openai else "ollama",
+                    channel_id=message.channel.id,
+                    user_id=message.author.id,
+                    user_name=message.author.name,
+                    user_role="user",
+                    user_message_type="input_text" if is_openai else "",
+                    user_message=message.clean_content
+                )
 
-                else:
-                    short_memories[target_channel_index]["messages"] = short_memory_messages
-
-                with open(Path(__file__).parent/"settings/short_memories.json", "w", encoding="utf-8") as f:
-                    json.dump(
-                        obj=short_memories,
-                        fp=f,
-                        ensure_ascii=False,
-                        indent=4
-                    )
+                adachi_rei_db.insert_short_memory(
+                    ai_provider="openai" if is_openai else "ollama",
+                    channel_id=message.channel.id,
+                    user_id=-1,
+                    user_name="足立レイ",
+                    user_role="assistant",
+                    user_message_type="output_text" if is_openai else "",
+                    user_message=ai_response
+                )
+                # ===
 
         case discord.MessageType.call:
             await discord_events.reply_message(

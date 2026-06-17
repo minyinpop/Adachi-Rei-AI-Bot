@@ -59,6 +59,18 @@ async def ask_ollama(sender_message: dict,
     }
     # ===
 
+    # 短期記憶提示詞
+    short_memory_prompt = []
+
+    for message in short_memory_messages:
+        short_memory_prompt.append(
+            {
+                "role": message[6],
+                "content": message[8]
+            }
+        )
+    # ===
+
     # 對話提示詞
     chat_prompt = {
         "role": sender_message["role"],
@@ -76,7 +88,7 @@ async def ask_ollama(sender_message: dict,
     # ===
 
     message_prompts = [system_prompt]
-    message_prompts.extend(short_memory_messages)
+    message_prompts.extend(short_memory_prompt)
     message_prompts.append(chat_prompt)
 
     response = await asyncio.to_thread(
@@ -89,22 +101,6 @@ async def ask_ollama(sender_message: dict,
         keep_alive="1h"
     )
 
-    # 儲存提示詞
-    short_memory_messages.append(
-        {
-            "role": "user",
-            "content": sender_message["message"]
-        }
-    )
-
-    short_memory_messages.append(
-        {
-            "role": "assistant",
-            "content": response["message"]["content"]
-        }
-    )
-    # ===
-
     if done_callback:
         await done_callback()
 
@@ -115,4 +111,4 @@ async def ask_ollama(sender_message: dict,
     print(f"Token 使用：{response['prompt_eval_count'] / 32768 * 100:.2f} %")
     print(f"Token 速度：{response['eval_count'] / response['eval_duration'] * 1e9:.2f} toks/s")
 
-    return response["message"]["content"], short_memory_messages
+    return response["message"]["content"]
