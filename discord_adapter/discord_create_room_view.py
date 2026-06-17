@@ -1,3 +1,4 @@
+import data.adachi_rei_database as adachi_rei_db
 import discord_events
 import discord
 import json
@@ -112,22 +113,8 @@ class CreateRoomView(discord.ui.View):
                     print(f"【❗】嘗試刪除 Discord 頻道 {guild.get_channel(content['channel_id'])} 時發生錯誤：{e}")
 
                 finally:
-                    # 刪除該頻道的短期記憶
-                    with open(Path(__file__).parent/"settings/short_memories.json", "r", encoding="utf-8") as f:
-                        short_memories = json.load(f)
-
-                    for memory in short_memories:
-                        if memory["channel_id"] == channel.id:
-                            short_memories.remove(memory)
-                            break
-
-                    with open(Path(__file__).parent/"settings/short_memories.json", "w", encoding="utf-8") as f:
-                        json.dump(
-                            short_memories,
-                            f,
-                            ensure_ascii=False,
-                            indent=4
-                        )
+                    # === 刪除記憶 ===
+                    adachi_rei_db.delete_short_memory(channel.id)
                     # ===
 
                     # 刪除該頻道的資料

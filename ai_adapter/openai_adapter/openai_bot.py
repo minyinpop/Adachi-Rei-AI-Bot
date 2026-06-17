@@ -61,6 +61,23 @@ async def ask_openai(sender_message: dict,
     )
     # ===
 
+    # 短期記憶提示詞
+    short_memory_prompt = []
+
+    for message in short_memory_messages:
+        short_memory_prompt.append(
+            {
+                "role": message[6],
+                "content": [
+                    {
+                        "type": message[7],
+                        "text": message[8]
+                    }
+                ]
+            }
+        )
+    # ===
+
     # 對話提示詞
     chat_prompt = {
         "role": sender_message["role"],
@@ -83,7 +100,7 @@ async def ask_openai(sender_message: dict,
     # ===
 
     message_prompts = []
-    message_prompts.extend(short_memory_messages)
+    message_prompts.extend(short_memory_prompt)
     message_prompts.append(chat_prompt)
 
     response = await asyncio.to_thread(
@@ -93,18 +110,7 @@ async def ask_openai(sender_message: dict,
         input=message_prompts
     )
 
-    # 儲存提示詞
-    short_memory_messages.append(chat_prompt)
-
-    short_memory_messages.append(
-        {
-            "role": "assistant",
-            "content": response.output_text
-        }
-    )
-    # ===
-
     if done_callback:
         await done_callback()
 
-    return response.output_text, short_memory_messages
+    return response.output_text
