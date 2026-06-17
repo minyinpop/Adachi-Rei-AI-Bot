@@ -1,3 +1,4 @@
+import data.adachi_rei_db as adachi_rei_db
 import discord_events
 import discord
 import asyncio
