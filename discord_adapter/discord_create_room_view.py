@@ -1,4 +1,4 @@
-import data.adachi_rei_database as adachi_rei_db
+import data.discord_repository as adachi_rei_db
 import discord_events
 import discord
 import json

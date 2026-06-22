@@ -3,6 +3,8 @@
     "public_openai_chat_channel_id": 1511958574321111152,
     "public_ollama_chat_channel_id": 1514128033986904064,
     "private_ollama_chat_channel_id": [],
+    "x_post_role_get_channel_id": 1518624295872626809,
+    "x_post_role_get_message_id": 1518649010129469521,
     "create_room_view_channel_id": 1515603972185129070,
     "create_room_view_message_id": 1515737532006928394
 }

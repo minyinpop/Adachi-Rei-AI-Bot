@@ -3,18 +3,21 @@
     "id": 338558312079687680,
     "name": "minyinpop",
     "gender": "男",
-    "relationship": "創作者之一"
+    "relationship": "創作者之一",
+    "impression": "舊型號機器人"
   },
   {
     "id": 880111279530999828,
     "name": "RenRen",
     "gender": "男",
-    "relationship": "男朋友"
+    "relationship": "男朋友",
+    "impression": ""
   },
   {
     "id": 659717075421626398,
     "name": "am_magic_87",
     "gender": "女",
-    "relationship": "大頭貼的創作者"
+    "relationship": "朋友",
+    "impression": "大頭貼的創作者"
   }
 ]

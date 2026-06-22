@@ -1,8 +1,6 @@
 import sqlite3
 
-from pathlib import Path
-
-DATABASE_PATH = Path(__file__).parent/"adachi_rei_database.db"
+from data.database_configs import DATABASE_PATH
 
 def init_short_memory():
     with sqlite3.connect(DATABASE_PATH) as connect:
