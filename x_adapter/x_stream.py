@@ -1,53 +1,76 @@
 import discord_adapter.discord_events as discord_events
-import requests
-import discord
+import data.x_repository as x_db
 import asyncio
+import aiohttp
+import discord
 import json
-import time
 import os
 
-from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv()
+async def start_system(client: discord.Client):
+    # 資料庫檢查
+    x_db.init_x_post()
+    # ===
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(intents=intents)
-
-@client.event
-async def on_ready():
-    asyncio.create_task(
-        asyncio.to_thread(
-            start_system
-        )
-    )
-
-def start_system():
-    while True:
-        try:
+    async with aiohttp.ClientSession() as session:
+        while True:
             print("【🔄️】正在嘗試連線到 X")
 
-            with requests.get(
+            async with session.get(
                 url=(
                     "https://api.x.com/2/tweets/search/stream"
-                    "?tweet.fields=author_id,created_at"
+                    "?tweet.fields=author_id,created_at,referenced_tweets"
                 ),
                 headers={
                     "Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"
-                },
-                stream=True,
-                timeout=60
+                }
             ) as response:
 
-                response.raise_for_status()
+                # https://docs.x.com/x-api/fundamentals/response-codes-and-errors
+                match response.status:
+                    case 200 | 201 | 204:
+                        print(f"【✅】成功連線到 X，狀態碼：{response.status}")
 
-                print("【✅】成功連線到 X")
+                    case 400 | 401 | 403 | 404 | 409 | 429:
+                        print(f"【❌】無法連線到 X，客戶端狀態碼：{response.status}")
+                        print("【⌛】60 秒後嘗試重新連線")
+                        await asyncio.sleep(60)
+                        continue
 
-                for line in response.iter_lines():
-                    if line:
+                    case 500 | 502 | 503 | 504:
+                        print(f"【❌】無法連線到 X，伺服器端狀態碼：{response.status}")
+                        print("【⌛】60 秒後嘗試重新連線")
+                        await asyncio.sleep(60)
+                        continue
+
+                    case _:
+                        print(f"【❓】連線到 X 時發現了未被登記的狀態碼：{response.status}")
+                        print("【⌛】60 秒後嘗試重新連線")
+                        await asyncio.sleep(60)
+                        continue
+
+                try:
+                    with open(Path(__file__).parent/"x_configs.json", "r", encoding="utf-8") as f:
+                        x_configs = json.load(f)
+
+                    async for line in response.content:
+                        line = line.decode("utf-8").strip()
+
+                        if not line:
+                            continue
+
                         data = json.loads(line)
+
+                        if "data" not in data:
+                            print("【❓】收到非推文事件：")
+                            print(json.dumps(
+                                data,
+                                ensure_ascii=False,
+                                indent=4
+                            ))
+
+                            continue
 
                         print(json.dumps(
                             data,
@@ -55,25 +78,31 @@ def start_system():
                             indent=4
                         ))
 
-                        with open(Path(__file__).parent/"x_configs.json", "r", encoding="utf-8") as f:
-                            x_configs = json.load(f)
+                        if x_db.check_post_exists(data["data"]["id"]):
+                            continue
 
-                        for i in range(len(x_configs)):
-                            if data["data"]["author_id"] != x_configs[i]["account_id"]:
+                        for config in x_configs:
+                            if int(data["data"]["author_id"]) != config["account_id"]:
                                 continue
 
-                            discord_events.send_message(
-                                channel=client.get_channel(x_configs[i]["channel_id"]),
-                                content=f""
+                            post_id = data["data"]["id"]
+                            post_url = f"https://x.com/i/web/status/{data['data']['id']}"
+                            post_title = data["data"]["text"]
+
+                            x_db.insert_x_post(
+                                post_id=post_id,
+                                post_url=post_url,
+                                post_title=post_title
                             )
 
-                            return
+                            await discord_events.send_message(
+                                channel=client.get_channel(config["channel_id"]),
+                                content=post_url
+                            )
 
-        except Exception as e:
-            print(f"【❌】向 X 請求時發生錯誤：{e}")
+                except Exception as e:
+                    print(f"【❌】向 X 請求時發生錯誤：{e}")
 
-        finally:
-            print("【⌛】10 秒後嘗試重新連線")
-            time.sleep(10)
-
-client.run(os.getenv("DISCORD_BOT_TOKEN"))
+                finally:
+                    print("【⌛】10 秒後嘗試重新連線")
+                    await asyncio.sleep(10)
