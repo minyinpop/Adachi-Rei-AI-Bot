@@ -156,6 +156,22 @@ async def message_worker():
 async def message_handler(is_openai: bool, message: discord.Message):
     match message.type:
         case discord.MessageType.default | discord.MessageType.reply:
+            content = message.clean_content.strip()
+
+            if not content and not message.attachments:
+                await discord_events.reply_message(
+                    message=message,
+                    content="【系統訊息】請輸入內容！"
+                )
+                return
+
+            if len(content) > 300:
+                await discord_events.reply_message(
+                    message=message,
+                    content="【系統訊息】輸入的內容不能超過 300 個字！"
+                )
+                return
+
             await discord_events.add_reaction(
                 message=message,
                 emoji=Reaction.read.value
