@@ -32,6 +32,7 @@ async def ask_ollama(sender_message: dict,
                  我認識 {memory['name']}
                  {memory['name']} 的姓別是 {memory['gender']}
                  {memory['name']} 是我的 {memory['relationship']}
+                 我對 {memory['name']} 的印象是 {memory['impression']}
              """).strip()
         )
 
