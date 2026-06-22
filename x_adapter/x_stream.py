@@ -1,3 +1,4 @@
+import discord_adapter.discord_events as discord_events
 import requests
 import discord
 import asyncio
@@ -6,6 +7,7 @@ import time
 import os
 
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
@@ -28,7 +30,10 @@ def start_system():
             print("【🔄️】正在嘗試連線到 X")
 
             with requests.get(
-                url="https://api.x.com/2/tweets/search/stream",
+                url=(
+                    "https://api.x.com/2/tweets/search/stream"
+                    "?tweet.fields=author_id,created_at"
+                ),
                 headers={
                     "Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"
                 },
@@ -49,6 +54,20 @@ def start_system():
                             ensure_ascii=False,
                             indent=4
                         ))
+
+                        with open(Path(__file__).parent/"x_configs.json", "r", encoding="utf-8") as f:
+                            x_configs = json.load(f)
+
+                        for i in range(len(x_configs)):
+                            if data["data"]["author_id"] != x_configs[i]["account_id"]:
+                                continue
+
+                            discord_events.send_message(
+                                channel=client.get_channel(x_configs[i]["channel_id"]),
+                                content=f""
+                            )
+
+                            return
 
         except Exception as e:
             print(f"【❌】向 X 請求時發生錯誤：{e}")
