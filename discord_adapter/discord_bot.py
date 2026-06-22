@@ -5,7 +5,8 @@ import discord
 import asyncio
 import json
 
-from discord_create_room_view import CreateRoomView
+from discord_create_room_view import CreateRoomView as chat_CreateRoomView
+from discord_x_post_room_view import CreateRoomView as role_CreateRoomView
 from ollama_adapter.ollama_bot import ask_ollama
 from openai_adapter.openai_bot import ask_openai
 from configs import DISCORD_BOT_TOKEN
@@ -29,19 +30,18 @@ async def on_ready():
     asyncio.create_task(x_stream.start_system(client))
     # ===
 
-    client.loop.create_task(message_worker())
-
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
 
+    # 檢查私人聊天的按鈕訊息
     client.add_view(
-        CreateRoomView(),
+        chat_CreateRoomView(),
         message_id=discord_configs["create_room_view_message_id"]
     )
 
     if discord_configs["create_room_view_message_id"] == -1:
         message = await client.get_channel(discord_configs["create_room_view_channel_id"]).send(
-            view=CreateRoomView()
+            view=chat_CreateRoomView()
         )
 
         discord_configs["create_room_view_message_id"] = message.id
@@ -53,9 +53,39 @@ async def on_ready():
                 ensure_ascii=False,
                 indent=4
             )
+    # ===
+
+    # 檢查推播身份組按鈕訊息
+    client.add_view(
+        role_CreateRoomView(),
+        message_id=discord_configs["x_post_role_get_message_id"]
+    )
+
+    if discord_configs["x_post_role_get_message_id"] == -1:
+        message = await client.get_channel(discord_configs["x_post_role_get_channel_id"]).send(
+            content="## 推播訂閱\n\n"
+                    "**點擊一下可以獲得身份組，**\n"
+                    "**再次點擊就可以移除。**\n",
+            view=role_CreateRoomView()
+        )
+
+        discord_configs["x_post_role_get_message_id"] = message.id
+
+        with open(Path(__file__).parent / "settings/discord_configs.json", "w", encoding="utf-8") as f:
+            json.dump(
+                discord_configs,
+                fp=f,
+                ensure_ascii=False,
+                indent=4
+            )
+    # ===
+
+    # 開始回覆訊息
+    client.loop.create_task(message_worker())
+    # ===
 
     # 因為開發所以先把下面的啟動訊息給關閉 TODO 開發完畢記得把 return 給刪除
-    return
+    # return
 
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
