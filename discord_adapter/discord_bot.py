@@ -1,5 +1,4 @@
 import data.discord_repository as adachi_rei_db
-import x_adapter.x_stream as x_stream
 import discord_events
 import discord
 import asyncio
@@ -21,14 +20,6 @@ message_queue = asyncio.Queue()
 
 @client.event
 async def on_ready():
-    # 啟動 X 貼文接收系統
-    asyncio.create_task(
-        asyncio.to_thread(
-            x_stream.start_system
-        )
-    )
-    # ===
-
     # 資料庫檢查
     adachi_rei_db.init_short_memory()
     # ===
