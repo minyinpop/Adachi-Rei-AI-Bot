@@ -1,4 +1,5 @@
-import data.discord_repository as adachi_rei_db
+import data.discord_repository as discord_db
+import x_adapter.x_stream as x_stream
 import discord_events
 import discord
 import asyncio
@@ -21,7 +22,11 @@ message_queue = asyncio.Queue()
 @client.event
 async def on_ready():
     # 資料庫檢查
-    adachi_rei_db.init_short_memory()
+    discord_db.init_short_memory()
+    # ===
+
+    # 開啟 X 貼文監測
+    asyncio.create_task(x_stream.start_system(client))
     # ===
 
     client.loop.create_task(message_worker())
@@ -50,7 +55,7 @@ async def on_ready():
             )
 
     # 因為開發所以先把下面的啟動訊息給關閉 TODO 開發完畢記得把 return 給刪除
-    # return
+    return
 
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
@@ -175,7 +180,7 @@ async def message_handler(is_openai: bool, message: discord.Message):
                 with open(Path(__file__).parent/"settings/long_memory.json", "r", encoding="utf-8") as f:
                     long_memory = json.load(f)
 
-                memories = adachi_rei_db.get_short_memory(
+                memories = discord_db.get_short_memory(
                     channel_id=message.channel.id
                 )
 
@@ -204,7 +209,7 @@ async def message_handler(is_openai: bool, message: discord.Message):
                     content=ai_response
                 )
 
-                adachi_rei_db.insert_short_memory(
+                discord_db.insert_short_memory(
                     ai_provider="openai" if is_openai else "ollama",
                     channel_id=message.channel.id,
                     user_id=message.author.id,
@@ -214,7 +219,7 @@ async def message_handler(is_openai: bool, message: discord.Message):
                     user_message=message.clean_content
                 )
 
-                adachi_rei_db.insert_short_memory(
+                discord_db.insert_short_memory(
                     ai_provider="openai" if is_openai else "ollama",
                     channel_id=message.channel.id,
                     user_id=-1,
