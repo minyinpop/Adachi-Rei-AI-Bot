@@ -165,10 +165,10 @@ async def message_handler(is_openai: bool, message: discord.Message):
                 )
                 return
 
-            if len(content) > 300:
+            if len(content) > 500:
                 await discord_events.reply_message(
                     message=message,
-                    content="【系統訊息】輸入的內容不能超過 300 個字！"
+                    content="【系統訊息】輸入的內容不能超過 500 個字！"
                 )
                 return
 
