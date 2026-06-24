@@ -43,20 +43,20 @@ async def start_system(client: discord.Client):
 
                     case 400 | 401 | 403 | 404 | 409 | 429:
                         print(f"【❌】無法連線到 X，客戶端狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                     case 500 | 502 | 503 | 504:
                         print(f"【❌】無法連線到 X，伺服器端狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                     case _:
                         print(f"【❓】連線到 X 時發現了未被登記的狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                 try:
@@ -113,5 +113,5 @@ async def start_system(client: discord.Client):
                     print(f"【❌】向 X 請求時發生錯誤：{e}")
 
                 finally:
-                    print("【⌛】10 秒後嘗試重新連線")
-                    await asyncio.sleep(10)
+                    print("【⌛】120 秒後嘗試重新連線")
+                    await asyncio.sleep(120)
