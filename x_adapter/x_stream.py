@@ -10,6 +10,12 @@ from datetime import datetime
 from pathlib import Path
 
 async def start_system(client: discord.Client):
+    #串流啟動通知
+    print("=== X 串流啟動 ===")
+    print(f"串流識別碼：{os.getpid()}")
+    print(f"串流啟動時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    # ===
+
     # 資料庫檢查
     x_db.init_x_post()
     # ===
