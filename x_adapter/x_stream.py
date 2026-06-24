@@ -104,7 +104,9 @@ async def start_system(client: discord.Client):
                             )
 
                 except Exception as e:
-                    print(f"【❌】向 X 請求時發生錯誤：{e}")
+                    print(f"【❌】向 X 請求時發生錯誤")
+                    print(f"例外類型：{type(e).__name__}")
+                    print(f"例外內容：{repr(e)}")
 
                 finally:
                     print("【⌛】10 秒後嘗試重新連線")
