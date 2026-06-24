@@ -114,7 +114,7 @@ class CreateRoomView(discord.ui.View):
 
                 finally:
                     # === 刪除記憶 ===
-                    adachi_rei_db.delete_short_memory(channel.id)
+                    # adachi_rei_db.delete_short_memory(channel.id)
                     # ===
 
                     # 刪除該頻道的資料
