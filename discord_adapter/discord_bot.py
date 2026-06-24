@@ -85,7 +85,7 @@ async def on_ready():
     # ===
 
     # 因為開發所以先把下面的啟動訊息給關閉 TODO 開發完畢記得把 return 給刪除
-    # return
+    return
 
     with open(Path(__file__).parent.parent/"ai_adapter/openai_adapter/openai_configs.json", "r", encoding="utf-8") as f:
         openai_configs = json.load(f)
