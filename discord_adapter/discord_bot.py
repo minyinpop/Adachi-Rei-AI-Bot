@@ -18,7 +18,9 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
-message_queue = asyncio.Queue()
+MESSAGE_QUEUE = asyncio.Queue()
+
+X_STREAM_TASK = None
 
 @client.event
 async def on_ready():
@@ -27,7 +29,12 @@ async def on_ready():
     # ===
 
     # 開啟 X 貼文監測
-    asyncio.create_task(x_stream.start_system(client))
+    global X_STREAM_TASK
+
+    if X_STREAM_TASK is None or X_STREAM_TASK.done():
+        X_STREAM_TASK = asyncio.create_task(
+            x_stream.start_system(client)
+        )
     # ===
 
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
@@ -131,27 +138,27 @@ async def on_message(message: discord.Message):
         return
 
     if message.channel.id == discord_configs["public_openai_chat_channel_id"]:
-        await message_queue.put((True, message))
+        await MESSAGE_QUEUE.put((True, message))
         return
 
     if message.channel.id == discord_configs["public_ollama_chat_channel_id"]:
-        await message_queue.put((False, message))
+        await MESSAGE_QUEUE.put((False, message))
         return
 
     for content in discord_configs["private_ollama_chat_channel_id"]:
         if message.channel.id != content["channel_id"]:
             continue
 
-        await message_queue.put((False, message))
+        await MESSAGE_QUEUE.put((False, message))
         return
 
 async def message_worker():
     while True:
-        (is_openai, message) = await message_queue.get()
+        (is_openai, message) = await MESSAGE_QUEUE.get()
 
         await message_handler(is_openai, message)
 
-        message_queue.task_done()
+        MESSAGE_QUEUE.task_done()
 
 async def message_handler(is_openai: bool, message: discord.Message):
     match message.type:
