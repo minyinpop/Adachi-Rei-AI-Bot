@@ -10,6 +10,12 @@ from datetime import datetime
 from pathlib import Path
 
 async def start_system(client: discord.Client):
+    #串流啟動通知
+    print("=== X 串流啟動 ===")
+    print(f"串流識別碼：{os.getpid()}")
+    print(f"串流啟動時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    # ===
+
     # 資料庫檢查
     x_db.init_x_post()
     # ===
@@ -37,20 +43,20 @@ async def start_system(client: discord.Client):
 
                     case 400 | 401 | 403 | 404 | 409 | 429:
                         print(f"【❌】無法連線到 X，客戶端狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                     case 500 | 502 | 503 | 504:
                         print(f"【❌】無法連線到 X，伺服器端狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                     case _:
                         print(f"【❓】連線到 X 時發現了未被登記的狀態碼：{response.status}")
-                        print("【⌛】60 秒後嘗試重新連線")
-                        await asyncio.sleep(60)
+                        print("【⌛】120 秒後嘗試重新連線")
+                        await asyncio.sleep(120)
                         continue
 
                 try:
@@ -109,5 +115,5 @@ async def start_system(client: discord.Client):
                     print(f"例外內容：{repr(e)}")
 
                 finally:
-                    print("【⌛】10 秒後嘗試重新連線")
-                    await asyncio.sleep(10)
+                    print("【⌛】120 秒後嘗試重新連線")
+                    await asyncio.sleep(120)
