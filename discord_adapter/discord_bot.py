@@ -223,19 +223,21 @@ async def message_handler(is_openai: bool, message: discord.Message):
                     )
 
                 # === 新版短期記憶讀取方式 ===
+                with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
+                    discord_configs = json.load(f)
+
                 with open(Path(__file__).parent/"settings/long_memory.json", "r", encoding="utf-8") as f:
                     long_memory = json.load(f)
 
                 memories = discord_db.get_short_memory(
-                    channel_id=message.channel.id
+                    channel_id=message.channel.id,
+                    limit=discord_configs["short_memory_limit"]
                 )
-
-                short_memory_messages_dev = memories.copy()
 
                 if is_openai:
                     ai_response = await ask_openai(
                         sender_message=sender_message,
-                        short_memory_messages=short_memory_messages_dev,
+                        short_memory_messages=memories.copy(),
                         long_memory=long_memory,
                         think_callback=think_callback,
                         done_callback=done_callback
@@ -244,7 +246,7 @@ async def message_handler(is_openai: bool, message: discord.Message):
                 else:
                     ai_response = await ask_ollama(
                         sender_message=sender_message,
-                        short_memory_messages=short_memory_messages_dev,
+                        short_memory_messages=memories.copy(),
                         long_memory=long_memory,
                         think_callback=think_callback,
                         done_callback=done_callback
