@@ -25,6 +25,13 @@ async def handle_onebot(websocket):
 
             has_at = False
 
+            sender_message = {
+                "id": int,
+                "name": str,
+                "role": "user",
+                "message": []
+            }
+
             match message["post_type"]:
                 case "message_sent":
                     match message["message_type"]:
@@ -35,29 +42,41 @@ async def handle_onebot(websocket):
                             for segment in message["message"]:
                                 match segment["type"]:
                                     case "at":
-                                        response = requests.post(
-                                            url="http://127.0.0.1:3001/get_group_member_info",
-                                            headers={
-                                                "Authorization": os.getenv("QQ_BOT_TOKEN")
-                                            },
-                                            json={
-                                                "group_id": message["group_id"],
-                                                "user_id": int(segment["data"]["qq"])
-                                            }
-                                        )
-
-                                        print("=== 獲取成員資料 ===")
-                                        print(json.dumps(
-                                            response.json(),
-                                            ensure_ascii=False,
-                                            indent=4
-                                        ))
-
                                         if int(segment["data"]["qq"]) == message["self_id"]:
-                                            pass
+                                            if has_at:
+                                                # Bot 已經被 @ 但又被 @，就把 Bot 的名字給加入到文字裡
+                                                sender_message["message"].append(message["sender"]["nickname"])
+
+                                            else:
+                                                # Bot 第一次被 @
+                                                has_at = True
+
+                                            continue
+
+                                        else:
+                                            # 其他人被 @，就去查詢那個人的名稱，然後添加到文字裡
+                                            response = requests.post(
+                                                url="http://127.0.0.1:3001/get_group_member_info",
+                                                headers={
+                                                    "Authorization": os.getenv("QQ_BOT_TOKEN")
+                                                },
+                                                json={
+                                                    "group_id": message["group_id"],
+                                                    "user_id": int(segment["data"]["qq"])
+                                                }
+                                            )
+
+                                            print("=== 獲取成員資料 ===")
+                                            print(json.dumps(
+                                                response.json(),
+                                                ensure_ascii=False,
+                                                indent=4
+                                            ))
+
+                                            sender_message["message"].append(response.json()["data"]["nickname"])
 
                                     case "text":
-                                        pass
+                                        sender_message["message"].append(segment["data"]["text"])
 
                                     case _:
                                         print(f"【❗】未被登記的 message：{segment['type']}")
@@ -77,7 +96,7 @@ async def handle_onebot(websocket):
                                         {
                                             "type": "text",
                                             "data": {
-                                                "text": "訊息發送成功！"
+                                                "text": "".join(sender_message["message"])
                                             }
                                         }
                                     ]
