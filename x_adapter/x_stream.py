@@ -6,6 +6,7 @@ import discord
 import json
 import os
 
+from datetime import datetime
 from pathlib import Path
 
 async def start_system(client: discord.Client):
@@ -15,6 +16,8 @@ async def start_system(client: discord.Client):
 
     async with aiohttp.ClientSession() as session:
         while True:
+            print("=== 連線時間 ===")
+            print(f"【⌚】{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print("【🔄️】正在嘗試連線到 X")
 
             async with session.get(
