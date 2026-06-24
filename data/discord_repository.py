@@ -63,21 +63,28 @@ def insert_short_memory(
             )
         )
 
-def get_short_memory(channel_id: int):
+def get_short_memory(channel_id: int, limit: int):
     with sqlite3.connect(DATABASE_PATH) as connect:
         cursor = connect.cursor()
 
         cursor.execute(
             """
-            SELECT * FROM short_memory
+            SELECT *
+            FROM short_memory
             WHERE channel_id = ?
+            ORDER BY id DESC
+            LIMIT ?
             """,
             (
                 channel_id,
+                limit
             )
         )
 
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        rows.reverse()
+
+        return rows
 
 def delete_short_memory(channel_id: int):
     with sqlite3.connect(DATABASE_PATH) as connect:
