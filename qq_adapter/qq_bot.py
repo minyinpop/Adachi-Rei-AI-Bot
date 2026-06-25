@@ -1,3 +1,4 @@
+import data.qq_repository as qq_db
 import websockets
 import requests
 import asyncio
@@ -13,6 +14,10 @@ MESSAGE_QUEUE = asyncio.Queue()
 
 async def handle_onebot(websocket):
     print("【✅】NapCat 連線成功")
+
+    # 檢查並初始化 SQLite
+    qq_db.init_short_memory()
+    # ===
 
     asyncio.create_task(message_worker())
 
@@ -151,6 +156,26 @@ async def message_handler(message):
                                 }
                             ]
                         }
+                    )
+
+                    qq_db.insert_short_memory(
+                        ai_provider="ollama",
+                        target_id=message["target_id"],
+                        user_id=sender_message["id"],
+                        user_name=sender_message["name"],
+                        user_role=sender_message["role"],
+                        user_message_type="",
+                        user_message=sender_message["message"]
+                    )
+
+                    qq_db.insert_short_memory(
+                        ai_provider="ollama",
+                        target_id=message["target_id"],
+                        user_id=-1,
+                        user_name="足立レイ",
+                        user_role="assistant",
+                        user_message_type="",
+                        user_message=ai_response
                     )
 
                     return
