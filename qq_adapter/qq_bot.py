@@ -1,10 +1,10 @@
-import os
-
 import websockets
 import requests
 import asyncio
 import json
+import os
 
+from ai_adapter.ollama_adapter.ollama_bot import ask_ollama
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,17 +23,17 @@ async def handle_onebot(websocket):
                 indent=4
             ))
 
-            has_at = False
-
-            sender_message = {
-                "id": int,
-                "name": str,
-                "role": "user",
-                "message": []
-            }
-
             match message["post_type"]:
                 case "message_sent":
+                    has_at = False
+
+                    sender_message = {
+                        "id": message["sender"]["user_id"],
+                        "name": message["sender"]["nickname"],
+                        "role": "user",
+                        "message": []
+                    }
+
                     match message["message_type"]:
                         case "group":
                             if message["group_id"] != 689904439:
@@ -84,6 +84,12 @@ async def handle_onebot(websocket):
 
                             if not has_at:
                                 continue
+
+                            await ask_ollama(
+                                sender_message=sender_message,
+                                short_memory_messages=[],
+                                long_memory=[]
+                            )
 
                             requests.post(
                                 url="http://127.0.0.1:3001/send_group_msg",
