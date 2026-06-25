@@ -85,7 +85,27 @@ async def handle_onebot(websocket):
                             if not has_at:
                                 continue
 
-                            await ask_ollama(
+                            sender_message["message"] = "".join(sender_message["message"])
+
+                            requests.post(
+                                url="http://127.0.0.1:3001/send_group_msg",
+                                headers={
+                                    "Authorization": os.getenv("QQ_BOT_TOKEN")
+                                },
+                                json={
+                                    "group_id": message["group_id"],
+                                    "message": [
+                                        {
+                                            "type": "text",
+                                            "data": {
+                                                "text": "正在思考中......"
+                                            }
+                                        }
+                                    ]
+                                }
+                            )
+
+                            ai_response = await ask_ollama(
                                 sender_message=sender_message,
                                 short_memory_messages=[],
                                 long_memory=[]
@@ -100,9 +120,15 @@ async def handle_onebot(websocket):
                                     "group_id": message["group_id"],
                                     "message": [
                                         {
+                                            "type": "reply",
+                                            "data": {
+                                                "id": str(message["message_id"])
+                                            }
+                                        },
+                                        {
                                             "type": "text",
                                             "data": {
-                                                "text": "".join(sender_message["message"])
+                                                "text": ai_response
                                             }
                                         }
                                     ]
