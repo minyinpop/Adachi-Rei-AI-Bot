@@ -10,7 +10,7 @@ async def ask_ollama(sender_message: dict,
                      short_memory_messages: list,
                      long_memory: list,
                      think_callback: Callable[[], Awaitable[None]] | None = None,
-                     done_callback: Callable[[], Awaitable[None]] | None = None):
+                     done_callback: Callable[[], Awaitable[None]] | None = None) -> str:
     if think_callback:
         await think_callback()
 
