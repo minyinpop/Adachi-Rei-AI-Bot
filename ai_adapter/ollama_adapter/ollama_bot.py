@@ -10,7 +10,7 @@ async def ask_ollama(sender_message: dict,
                      short_memory_messages: list,
                      long_memory: list,
                      think_callback: Callable[[], Awaitable[None]] | None = None,
-                     done_callback: Callable[[], Awaitable[None]] | None = None):
+                     done_callback: Callable[[], Awaitable[None]] | None = None) -> str:
     if think_callback:
         await think_callback()
 
@@ -29,10 +29,10 @@ async def ask_ollama(sender_message: dict,
     for memory in long_memory:
         long_memory_prompts.append(
             textwrap.dedent(f"""
-                 我認識 {memory['name']}
+                 你認識 {memory['name']}
                  {memory['name']} 的姓別是 {memory['gender']}
-                 {memory['name']} 是我的 {memory['relationship']}
-                 我對 {memory['name']} 的印象是 {memory['impression']}
+                 {memory['name']} 是你的 {memory['relationship']}
+                 你對 {memory['name']} 的印象是 {memory['impression']}
              """).strip()
         )
 
@@ -53,7 +53,7 @@ async def ask_ollama(sender_message: dict,
                 "=== 環境參數 ===",
                 f"正在跟你對話的使用者名稱：{sender_message['name']}",
                 "",
-                "=== 與其他使用者的關係 ===",
+                "=== 你記得的關係 ===",
                 long_memory_prompts
             ]
         )
@@ -97,7 +97,7 @@ async def ask_ollama(sender_message: dict,
         model=ollama_configs["response_model"],
         messages=message_prompts,
         options={
-            "num_ctx": 32768
+            "num_ctx": 65536
         },
         keep_alive="1h"
     )
@@ -109,7 +109,7 @@ async def ask_ollama(sender_message: dict,
     print(f"Token 傳入：{response['prompt_eval_count']}")
     print(f"Token 回覆：{response['eval_count']}")
     print(f"Token 總共：{response['prompt_eval_count'] + response['eval_count']}")
-    print(f"Token 使用：{response['prompt_eval_count'] / 32768 * 100:.2f} %")
+    print(f"Token 使用：{response['prompt_eval_count'] / 65536 * 100:.2f} %")
     print(f"Token 速度：{response['eval_count'] / response['eval_duration'] * 1e9:.2f} toks/s")
 
     return response["message"]["content"]
