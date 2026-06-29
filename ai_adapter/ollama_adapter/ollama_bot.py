@@ -29,10 +29,10 @@ async def ask_ollama(sender_message: dict,
     for memory in long_memory:
         long_memory_prompts.append(
             textwrap.dedent(f"""
-                 我認識 {memory['name']}
+                 你認識 {memory['name']}
                  {memory['name']} 的姓別是 {memory['gender']}
-                 {memory['name']} 是我的 {memory['relationship']}
-                 我對 {memory['name']} 的印象是 {memory['impression']}
+                 {memory['name']} 是你的 {memory['relationship']}
+                 你對 {memory['name']} 的印象是 {memory['impression']}
              """).strip()
         )
 
@@ -53,7 +53,7 @@ async def ask_ollama(sender_message: dict,
                 "=== 環境參數 ===",
                 f"正在跟你對話的使用者名稱：{sender_message['name']}",
                 "",
-                "=== 與其他使用者的關係 ===",
+                "=== 你記得的關係 ===",
                 long_memory_prompts
             ]
         )
