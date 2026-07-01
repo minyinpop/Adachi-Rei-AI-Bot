@@ -7,8 +7,8 @@ import json
 
 from discord_create_room_view import CreateRoomView as chat_CreateRoomView
 from discord_x_post_room_view import CreateRoomView as role_CreateRoomView
-from ollama_adapter.ollama_bot import ask_ollama
-from openai_adapter.openai_bot import ask_openai
+from ai_adapter.ollama_adapter.ollama_bot import ask_ollama
+from ai_adapter.openai_adapter.openai_bot import ask_openai
 from configs import DISCORD_BOT_TOKEN
 from pathlib import Path
 from enum import Enum
