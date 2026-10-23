@@ -28,14 +28,15 @@ async def on_ready():
     discord_db.init_short_memory()
     # ===
 
-    # 開啟 X 貼文監測
-    global X_STREAM_TASK
-
-    if X_STREAM_TASK is None or X_STREAM_TASK.done():
-        X_STREAM_TASK = asyncio.create_task(
-            x_stream.start_system(client)
-        )
-    # ===
+    # 沒錢了，先 pass
+    # # 開啟 X 貼文監測
+    # global X_STREAM_TASK
+    #
+    # if X_STREAM_TASK is None or X_STREAM_TASK.done():
+    #     X_STREAM_TASK = asyncio.create_task(
+    #         x_stream.start_system(client)
+    #     )
+    # # ===
 
     with open(Path(__file__).parent/"settings/discord_configs.json", "r", encoding="utf-8") as f:
         discord_configs = json.load(f)
