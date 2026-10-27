@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "template_path": "~/OneDrive/Documents/OpenUtau/Backups/Untitled-autosave.ustx",
+  "openutau_exe": "D:/OpenUTAU/OpenUtau.exe",
+  "renderer_exe": "openutau_adapter/renderer_host/bin/OpenUtauRenderer.exe",
+  "singer": "热音终ver1.0.0（单独音）",
+  "phonemizer": "OpenUtau.Plugin.Builtin.JapanesePresampPhonemizer",
+  "output_dir": "openutau_adapter/output",
+  "speech_rate": 6.5,
+  "song_default_duration_seconds": 10
+}

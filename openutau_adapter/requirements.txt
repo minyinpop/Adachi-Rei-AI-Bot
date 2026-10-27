@@ -1,0 +1,4 @@
+pywinauto==0.6.9
+pykakasi==2.3.0
+PyYAML>=6.0,<7
+pyopenjtalk-plus[onnxruntime]==0.4.1.post10

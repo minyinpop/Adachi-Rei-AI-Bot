@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>OpenUtauRenderer</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Run from this project's own bin folder. The installed marker makes OpenUtau
+         resolve its existing user data under Documents\OpenUtau. -->
+    <OutputPath>$(MSBuildProjectDirectory)\bin\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="OpenUtau.Core">
+      <HintPath>D:\OpenUTAU\OpenUtau.Core.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="OpenUtau.Plugin.Builtin">
+      <HintPath>D:\OpenUTAU\OpenUtau.Plugin.Builtin.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>D:\OpenUTAU\System.Text.Encoding.CodePages.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\OpenUTAU\installed.txt" Link="installed.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="D:\OpenUTAU\OpenUtau.Plugin.Builtin.dll" Link="OpenUtau.Plugin.Builtin.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

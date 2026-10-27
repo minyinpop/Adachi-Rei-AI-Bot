@@ -1,3 +1,6 @@
 /.env
 data/adachi_rei_database.db
+data/qq_short_memory.json
+data/qq_long_memory.db
 *.pyc
+openutau_adapter/output/
