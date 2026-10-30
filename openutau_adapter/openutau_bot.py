@@ -14,6 +14,8 @@ from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent
 CONFIG_PATH = Path(__file__).parent/"openutau_configs.json"
+# Proper nouns pykakasi reads wrongly, e.g. 熱音終 -> ねつおとおわり.
+PRONUNCIATIONS_PATH = Path(__file__).parent/"pronunciations.json"
 SMALL_KANA = set("ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ")
 IGNORED = set("、。，．！？!?,.・\n\r\t ")
 PAUSE_SECONDS = {
@@ -120,9 +122,36 @@ def _quote_yaml(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def _load_pronunciations() -> dict[str, str]:
+    try:
+        data = json.loads(PRONUNCIATIONS_PATH.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as exc:
+        print(f"【⚠】專有名詞讀音表讀取失敗，本次不套用：{exc}")
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {
+        unicodedata.normalize("NFKC", str(word)): str(reading)
+        for word, reading in data.items()
+        if str(word).strip() and str(reading).strip()
+    }
+
+
+def _apply_pronunciations(text: str) -> str:
+    # Longest first so a longer name wins over a word it contains.
+    for word, reading in sorted(
+        _load_pronunciations().items(), key=lambda item: len(item[0]), reverse=True
+    ):
+        text = text.replace(word, reading)
+    return text
+
+
 def _normalize_hiragana(text: str) -> str:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
     text = unicodedata.normalize("NFKC", text)
+    text = _apply_pronunciations(text)
     for english, katakana in KNOWN_ENGLISH_TO_KATAKANA.items():
         text = re.sub(
             rf"(?i)(?<![A-Za-z]){re.escape(english)}s?(?=\d|[^\w]|$)",

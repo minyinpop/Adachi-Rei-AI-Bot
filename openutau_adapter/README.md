@@ -16,6 +16,10 @@ Edit `openutau_configs.json` to select the voicebank, template, OpenUtau executa
 
 The generated `.ustx` excerpt and `.wav` files are placed in `openutau_adapter/output/`, which is ignored by Git. Newer USTX templates are converted on generated output to the bundled renderer's supported format; source templates and songs are left untouched. Set `song_default_duration_seconds` in `openutau_configs.json` to adjust the target length when the user does not request a specific duration.
 
+## Proper-noun readings
+
+pykakasi reads proper nouns with ordinary dictionary readings, e.g. 熱音終 becomes ねつおとおわり. `pronunciations.json` maps such words to their correct hiragana (`{"熱音終": "ねつねおわり"}`); the table is applied to `voice_text` and emphasized words before any kana conversion, longest entry first, and is re-read on every reply, so new entries take effect without restarting the bot. Add both Japanese and simplified Chinese spellings when the model may write either.
+
 ## Runtime requirements
 
 Install the project and adapter dependencies with `python -m pip install -r requirements.txt -r openutau_adapter/requirements.txt`. Build the headless WAV renderer with `dotnet build openutau_adapter/renderer_host/OpenUtauRenderer.csproj`. Both speech and song rendering use OpenUtau's C# core without opening its UI. NapCat must be able to access the rendered WAV from the same machine to send it as a QQ voice message.
