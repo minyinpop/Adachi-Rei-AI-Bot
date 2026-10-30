@@ -1,0 +1,18 @@
+[
+  {
+    "time": "08:00",
+    "group_openid": "CAC9F4FB6C190FE5AD4162032EFC5D11",
+    "text": "早上好，还没起床的群友们该起床了"
+  },
+  {
+    "time": "15:00",
+    "group_openid": "CAC9F4FB6C190FE5AD4162032EFC5D11",
+    "text": "オワリ提醒群ユ们，3点了，该喝茶了",
+    "image": "images/tea_time.jpg"
+  },
+  {
+    "time": "19:00",
+    "group_openid": "CAC9F4FB6C190FE5AD4162032EFC5D11",
+    "text": "晚上好，没吃饭的群友们该吃饭了"
+  }
+]
