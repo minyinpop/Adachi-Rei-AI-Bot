@@ -7,7 +7,9 @@ from pathlib import Path
 SHORT_MEMORY_PATH = Path(__file__).parent / "qq_short_memory.json"
 LONG_MEMORY_DB_PATH = Path(__file__).parent / "qq_long_memory.db"
 MAX_SHORT_MEMORY_MESSAGES_PER_TARGET = 100
-MAX_USER_IDENTITY_LENGTH = 300
+MAX_USER_IDENTITY_LENGTH = 500
+# Group messages that did not @ the bot; kept only as conversation context.
+GROUP_CHAT_MESSAGE_TYPE = "group_chat"
 
 
 def init_long_memory() -> None:
@@ -25,6 +27,66 @@ def init_long_memory() -> None:
             )
             """
         )
+        # Latest display name per member, so names map to OpenIDs across restarts.
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS group_members (
+                group_openid TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (group_openid, user_id)
+            )
+            """
+        )
+
+
+def upsert_group_member(group_openid: str, user_id: str, user_name: str) -> None:
+    user_name = user_name.strip()
+    if not user_id or not user_name or user_name == "群友":
+        return
+    with sqlite3.connect(LONG_MEMORY_DB_PATH) as connection:
+        connection.execute(
+            """
+            INSERT INTO group_members (group_openid, user_id, user_name, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(group_openid, user_id) DO UPDATE SET
+                user_name = excluded.user_name,
+                updated_at = excluded.updated_at
+            """,
+            (
+                str(group_openid),
+                str(user_id),
+                user_name,
+                datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+            ),
+        )
+
+
+def get_group_members(group_openid: str) -> list[dict]:
+    """Return every known member of a group with their name and identity."""
+    with sqlite3.connect(LONG_MEMORY_DB_PATH) as connection:
+        rows = connection.execute(
+            """
+            SELECT m.user_id, m.user_name, COALESCE(i.identity, '')
+            FROM group_members AS m
+            LEFT JOIN user_identities AS i
+                ON i.group_openid = m.group_openid AND i.user_id = m.user_id
+            WHERE m.group_openid = ?
+            UNION ALL
+            SELECT i.user_id, '', i.identity
+            FROM user_identities AS i
+            WHERE i.group_openid = ? AND NOT EXISTS (
+                SELECT 1 FROM group_members AS m
+                WHERE m.group_openid = i.group_openid AND m.user_id = i.user_id
+            )
+            """,
+            (str(group_openid), str(group_openid)),
+        ).fetchall()
+    return [
+        {"user_id": str(user_id), "name": str(name), "identity": str(identity)}
+        for user_id, name, identity in rows
+    ]
 
 
 def set_user_identity(
