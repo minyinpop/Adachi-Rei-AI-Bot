@@ -980,6 +980,17 @@ def _crop_highlight_ustx(
     if not candidates:
         raise ValueError("找不到符合預設時長的可用歌曲片段。")
 
+    # A stray note isolated by long rests (e.g. a 0.18 s pickup at the start of
+    # 縛) forms its own tiny component and would otherwise be a valid
+    # candidate; drop such fragments whenever a reasonably long one exists.
+    minimum_excerpt_seconds = min(float(requested_target), 3.0)
+    long_enough = [
+        candidate for candidate in candidates
+        if candidate["duration"] >= minimum_excerpt_seconds
+    ]
+    if long_enough:
+        candidates = long_enough
+
     # Remove near-duplicate windows before random selection. This keeps
     # variation musically plausible while allowing strong areas throughout the
     # song, instead of forcing every request to the global maximum.
@@ -1541,6 +1552,25 @@ def _generate_song_excerpt(
     return audio_path, source.stem
 
 
+def _generate_full_song(song_query: str = "") -> tuple[Path, str]:
+    """Render a whole USTX score without cropping; a 4-minute song takes ~1 minute."""
+    configs = load_configs()
+    if not configs.get("enabled", False):
+        raise RuntimeError("OpenUtau 語音功能目前已在 openutau_configs.json 關閉。")
+    output_dir = _resolve_path(configs["output_dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    songs_dir = Path(__file__).resolve().parent / "songs"
+    source = _choose_ustx(songs_dir, song_query)
+    project_path = output_dir/f"full_song_{datetime.now():%Y%m%d_%H%M%S_%f}.ustx"
+    project_path.write_text(
+        _adapt_ustx_text_for_renderer(source.read_text(encoding="utf-8-sig"), str(source)),
+        encoding="utf-8",
+    )
+    print(f"【🎵】選用歌譜：{source.name}；完整演唱")
+    audio_path = _render_wav(project_path, _resolve_path(configs["renderer_exe"]))
+    return audio_path, source.stem
+
+
 def _generate_audio(text: str, prosody: dict | None = None) -> Path:
     configs = load_configs()
     if not configs.get("enabled", False):
@@ -1591,3 +1621,7 @@ async def generate_openutau_song_excerpt(
     return await asyncio.to_thread(
         _generate_song_excerpt, song_query, minimum_duration_seconds
     )
+
+
+async def generate_openutau_full_song(song_query: str = "") -> tuple[Path, str]:
+    return await asyncio.to_thread(_generate_full_song, song_query)
