@@ -72,6 +72,7 @@ Bot 可在每天固定時間主動發訊息到指定群，設定放在 `qq_adapt
 
 - `time`：電腦本地時間，24 小時制 `HH:MM`。
 - `group_openid`：目標群的 OpenID，可從 Bot 收到該群訊息時的 log 取得。
+- `date`：選填，格式 `YYYY-MM-DD`。填了就只在那天的 `time` 發送一次（例如節日問候），時間過了自動不再發；不填則每天重複。
 - `text`／`image`：至少填一項。`image` 為相對於 `qq_adapter/settings/` 的路徑，圖片放在 `settings/images/`。
 - 面向 QQ 的文字請用簡體中文。
 

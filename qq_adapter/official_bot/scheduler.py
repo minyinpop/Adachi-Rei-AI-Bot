@@ -1,9 +1,12 @@
-"""Daily proactive group messages driven by settings/scheduled_messages.json."""
+"""Proactive group messages driven by settings/scheduled_messages.json.
+
+Jobs repeat daily unless they set `date`, which makes them one-off.
+"""
 from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from .sdk import (
@@ -18,9 +21,10 @@ from .settings import SCHEDULED_MESSAGES_PATH
 
 
 def load_scheduled_messages() -> list[dict]:
-    """Return valid jobs as {"time", "group_openid", "text", "image"}.
+    """Return valid jobs as {"time", "date", "group_openid", "text", "image"}.
 
-    `image` is optional and relative to the settings folder.
+    `image` is optional and relative to the settings folder; `date`
+    (YYYY-MM-DD) is optional and sends the job once on that day only.
     """
     if not SCHEDULED_MESSAGES_PATH.exists():
         return []
@@ -43,8 +47,10 @@ def load_scheduled_messages() -> list[dict]:
             image_path = SCHEDULED_MESSAGES_PATH.parent / image if image else None
             if image_path and not image_path.is_file():
                 raise ValueError(f"找不到圖片 {image_path}")
+            once = str(entry.get("date") or "").strip()
             jobs.append({
                 "time": time.fromisoformat(str(entry["time"])),
+                "date": date.fromisoformat(once) if once else None,
                 "group_openid": str(entry["group_openid"]).strip(),
                 "text": str(entry.get("text") or "").strip(),
                 "image": image_path,
@@ -56,7 +62,12 @@ def load_scheduled_messages() -> list[dict]:
     return [job for job in jobs if job["group_openid"] and (job["text"] or job["image"])]
 
 
-def _next_run(job_time: time, now: datetime) -> datetime:
+def _next_run(job: dict, now: datetime) -> datetime | None:
+    """Next send time, or None for a one-off job whose moment has passed."""
+    job_time: time = job["time"]
+    if job["date"] is not None:
+        run_at = datetime.combine(job["date"], job_time.replace(second=0, microsecond=0))
+        return run_at if run_at > now else None
     run_at = now.replace(
         hour=job_time.hour, minute=job_time.minute, second=0, microsecond=0
     )
@@ -90,18 +101,23 @@ async def run_scheduled_messages(
     uploader: MediaUploader,
     jobs: list[dict],
 ) -> None:
-    """Send each job to its group every day at its local time."""
+    """Send each job to its group at its local time, daily or on its date."""
     if not jobs:
         return
     for job in jobs:
         attachment = f"（附圖 {job['image'].name}）" if job["image"] else ""
+        when = f"{job['date']:%Y-%m-%d} " if job["date"] else "每日 "
+        expired = "（時間已過，不會發送）" if _next_run(job, datetime.now()) is None else ""
         print(
-            f"【⏰】已排程每日 {job['time']:%H:%M} 主動發送至群 "
-            f"{job['group_openid'][:8]}…：{job['text']}{attachment}"
+            f"【⏰】已排程{when}{job['time']:%H:%M} 主動發送至群 "
+            f"{job['group_openid'][:8]}…：{job['text']}{attachment}{expired}"
         )
     while True:
         now = datetime.now()
-        next_runs = [(_next_run(job["time"], now), job) for job in jobs]
+        next_runs = [(_next_run(job, now), job) for job in jobs]
+        next_runs = [(run, job) for run, job in next_runs if run is not None]
+        if not next_runs:
+            return
         run_at = min(run for run, _ in next_runs)
         await asyncio.sleep((run_at - now).total_seconds())
         for run, job in next_runs:
