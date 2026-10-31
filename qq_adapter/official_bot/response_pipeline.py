@@ -11,6 +11,7 @@ import data.qq_repository as qq_db
 from ai_adapter.ollama_adapter.ollama_bot import ask_ollama_with_audio_decision
 from openutau_adapter.openutau_bot import (
     generate_openutau_audio,
+    generate_openutau_full_song,
     generate_openutau_song_excerpt,
     get_available_song_titles,
     is_audio_enabled,
@@ -18,6 +19,7 @@ from openutau_adapter.openutau_bot import (
 from qq_adapter.song_intent import (
     format_song_catalog,
     is_explicit_singing_request,
+    is_full_song_request,
     is_short_confirmation,
     is_song_capability_question,
     is_song_catalog_question,
@@ -382,9 +384,21 @@ class OwariOfficialBotResponse(OwariOfficialBotBase):
             # Keep group-visible song status in Simplified Chinese even if
             # Ollama accidentally returns its Japanese voice draft as reply_text.
             ai_response = f"正在准备演唱：{song_query or '你选的歌曲'}。"
+        full_song = voice_mode == "sing" and is_full_song_request(user_text)
         if not skip_audio and is_audio_enabled():
             try:
-                if voice_mode == "sing":
+                if full_song:
+                    # A whole song takes about a minute to render, so say so
+                    # first instead of leaving the group waiting in silence.
+                    print(f"【🎼】正在用 OpenUTAU 生成完整歌曲：{song_query}")
+                    await self._reply(
+                        group_openid, message_id,
+                        f"正在准备完整演唱：{song_query or '你选的歌曲'}，大约需要 1～2 分钟。",
+                        "全曲準備提示",
+                    )
+                    audio_path, song_title = await generate_openutau_full_song(song_query)
+                    ai_response = f"正在播放：{song_title}"
+                elif voice_mode == "sing":
                     print(f"【🎼】正在用 OpenUTAU 生成歌曲片段：{song_query}")
                     audio_path, song_title = await generate_openutau_song_excerpt(
                         song_query,
@@ -425,6 +439,11 @@ class OwariOfficialBotResponse(OwariOfficialBotBase):
                 print("【✅】QQ 群語音已送出")
             except Exception as exc:
                 print(f"【⚠】QQ 語音上傳／傳送失敗，改送文字：{exc}")
+                if full_song:
+                    ai_response = (
+                        f"抱歉，{song_title}的完整版语音没能发送，"
+                        "可能超过了 QQ 语音的长度或大小限制。"
+                    )
 
         outgoing_text, has_mentions = _link_member_mentions(
             ai_response,

@@ -159,6 +159,14 @@ def is_song_duration_followup(text: str) -> bool:
     return bool(asks_for_longer or (has_duration and (states_minimum or mentions_singing)))
 
 
+def is_full_song_request(text: str) -> bool:
+    """Whether the user wants the whole song rather than a highlight excerpt."""
+    normalized = re.sub(r"\s+", "", text).casefold()
+    return any(phrase in normalized for phrase in (
+        "整首", "全曲", "全首", "整曲", "完整", "唱完", "唱全", "完整版", "fullsong",
+    ))
+
+
 def requested_duration_seconds(text: str) -> int:
     match = re.search(r"(\d+(?:\.\d+)?)(?:秒鐘|秒)", text)
     return max(0, math.ceil(float(match.group(1)))) if match else 0
