@@ -456,6 +456,7 @@ class OwariOfficialBotResponse(OwariOfficialBotBase):
             markdown=has_mentions,
         ):
             return
+        self.replies_sent += 1
         print(f"【✅】QQ 群文字回覆已送出{'（含 @ 群友）' if has_mentions else ''}")
 
         qq_db.insert_short_memory(

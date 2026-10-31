@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+from datetime import datetime
 
 import httpx
 import data.qq_repository as qq_db
@@ -32,6 +33,9 @@ class OwariOfficialBot(OwariOfficialBotCommands, OwariOfficialBotResponse):
         self._seen_message_ids: set[str] = set()
         self._inference_state_lock = asyncio.Lock()
         self._active_group_openid: str | None = None
+        # Shown by /status.
+        self.started_at = datetime.now()
+        self.replies_sent = 0
 
     async def on_message_event(self, event_type: str, raw_event: dict) -> None:
         # The bot runs in "receive all group messages" mode; only messages that

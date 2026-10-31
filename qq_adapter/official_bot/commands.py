@@ -1,11 +1,14 @@
 """Slash-command handlers for the official QQ bot."""
 from __future__ import annotations
 
+from datetime import datetime
+
 import data.qq_repository as qq_db
 from openutau_adapter.openutau_bot import get_available_song_titles
 from qq_adapter.song_intent import format_song_catalog
 from .base import OwariOfficialBotBase
 from .message_utils import _get_message_value, _get_sender_name
+from .scheduler import next_scheduled_job
 from .settings import (
     MODEL_SWITCH_COMMANDS,
     get_ollama_response_model as _get_ollama_response_model,
@@ -21,6 +24,18 @@ CHAT_CLEAN_COMMANDS = {
     "/clean_memory", "clean_memory", "/chat_clean", "chat_clean",
 }
 SONG_SHOW_COMMANDS = {"/songs", "songs", "/song_show", "song_show"}
+STATUS_COMMANDS = {"/status", "/bot_status"}
+
+
+def _format_uptime(seconds: float) -> str:
+    minutes, _ = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    if days:
+        return f"{days} 天 {hours} 小时"
+    if hours:
+        return f"{hours} 小时 {minutes} 分钟"
+    return f"{minutes} 分钟"
 
 
 def _match_command_prefix(command: str, prefixes: tuple[str, ...]) -> str | None:
@@ -171,6 +186,31 @@ class OwariOfficialBotCommands(OwariOfficialBotBase):
                     user_message=response,
                 )
                 print(f"【🎵】/songs 已列出全部曲目，共 {len(song_titles)} 首。")
+            return True
+
+        if command in STATUS_COMMANDS:
+            now = datetime.now()
+            try:
+                model = _get_ollama_response_model() or "未设置"
+            except Exception as exc:
+                print(f"【⚠】/status 讀取模型失敗：{exc}")
+                model = "读取失败"
+            upcoming = next_scheduled_job(now)
+            next_job = (
+                f"{upcoming[0]:%m-%d %H:%M}「{upcoming[1]['text'] or '图片'}」"
+                if upcoming else "无"
+            )
+            response = "\n".join([
+                "热音终运行状态：",
+                f"- 已运行：{_format_uptime((now - self.started_at).total_seconds())}",
+                f"- 当前模型：{model}",
+                f"- 本次启动后已回复：{self.replies_sent} 则",
+                f"- 本群短期记忆：{len(qq_db.get_short_memory(group_openid, 1000))} 则",
+                f"- 处理状态：{'处理中' if self._active_group_openid else '空闲'}",
+                f"- 下一则排程：{next_job}",
+            ])
+            await self._reply(group_openid, message_id, response, "/status 狀態")
+            print("【📊】/status 已回報運行狀態。")
             return True
 
         return False

@@ -74,6 +74,16 @@ def _next_run(job: dict, now: datetime) -> datetime | None:
     return run_at if run_at > now else run_at + timedelta(days=1)
 
 
+def next_scheduled_job(now: datetime) -> tuple[datetime, dict] | None:
+    """The soonest upcoming job in the current schedule file, if any."""
+    upcoming = [
+        (run, job)
+        for job in load_scheduled_messages()
+        if (run := _next_run(job, now)) is not None
+    ]
+    return min(upcoming, key=lambda item: item[0]) if upcoming else None
+
+
 async def _send_job(api: QQApiClient, uploader: MediaUploader, job: dict) -> None:
     group_openid = job["group_openid"]
     image_path: Path | None = job["image"]

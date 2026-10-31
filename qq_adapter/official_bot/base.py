@@ -1,6 +1,8 @@
 """Shared state and reply helper for the official QQ bot mixins."""
 from __future__ import annotations
 
+from datetime import datetime
+
 import httpx
 
 from .sdk import MediaUploader, QQApiClient
@@ -10,6 +12,9 @@ class OwariOfficialBotBase:
     api: QQApiClient
     http_client: httpx.AsyncClient
     media_uploader: MediaUploader
+    started_at: datetime
+    replies_sent: int
+    _active_group_openid: str | None
 
     async def _reply(
         self,
